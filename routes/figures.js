@@ -26,25 +26,27 @@ function parsePictures(gallery, db, username, figureid)
             // official picture, get it
             picids.push(id);
 
-            var u = url.parse(src);
-            http.get({
-                hostname: u.hostname,
-                port: u.port || 80,
-                path: u.path
-            }, function(res) {
-                var image = '';
-                res.setEncoding('binary');
-                res.on('data', function(chunk) {
-                    image += chunk;
+            (function(id, src) {
+                var u = url.parse(src);
+                http.get({
+                    hostname: u.hostname,
+                    port: u.port || 80,
+                    path: u.path
+                }, function(res) {
+                    var image = '';
+                    res.setEncoding('binary');
+                    res.on('data', function(chunk) {
+                        image += chunk;
+                    });
+                    res.on('end', function() {
+                        // store image
+                        images.insert({picid: id, data: image});
+                    });
                 });
-                res.on('end', function() {
-                    // store image
-                    images.insert({picid: id, data: image});
-                });
-            });
+            })(id, src);
         }
     }
-    console.log('figuresimages.update({figureid: ' + figureid + '},{"$push": {images: {"$each": ' + JSON.stringify(picids) + '}}});');
+    //console.log('figuresimages.update({figureid: ' + figureid + '},{"$push": {images: {"$each": ' + JSON.stringify(picids) + '}}});');
 
     figuresimages.update({figureid: figureid},
                          {"$push": {
@@ -162,6 +164,48 @@ router.get('/list/figures', function(req, res, next) {
             res.render('listfigures', { figures: doc });
         });
     }
+});
+
+router.get('/list/figure', function(req, res, next) {
+    var figureid = parseInt(req.query.id);
+    if (!figureid) {
+        res.send('Invalid id');
+        return;
+    }
+    var figures = req.db.get('figures');
+    var promise = figures.find({figureid: figureid}, {});
+    promise.on('success', function(doc) {
+        // find the images
+        var images = req.db.get('images');
+        var figuresimages = req.db.get('figuresimages');
+        var imagearray = [];
+        promise = figuresimages.find({figureid: figureid}, {});
+        promise.on('success', function(doc) {
+            if (!doc.length) {
+                res.send('No images');
+                return;
+            }
+            res.render('listfigure', { images: doc[0].images || [] });
+        });
+    });
+});
+
+router.get('/list/image', function(req, res, next) {
+    var imageid = parseInt(req.query.id);
+    if (!imageid) {
+        res.send('Invalid id');
+        return;
+    }
+    var images = req.db.get('images');
+    var promise = images.find({picid: imageid}, {});
+    promise.on('success', function(doc) {
+        if (!doc.length) {
+            res.send('No data');
+            return;
+        }
+        res.setHeader('content-type', 'image/jpeg');
+        res.end(doc[0].data, 'binary');
+    });
 });
 
 module.exports = router;
