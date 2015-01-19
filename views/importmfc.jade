@@ -1,0 +1,15 @@
+extends layout
+
+block content
+  if importuser
+    p= importuser
+  else
+    form#formImport(name="import",method="get",action="/figures/import")
+      input#inputUsername(type="text",placeholder="username",name="importuser")
+
+  script.
+    var form = document.getElementById("formImport");
+    form.onkeypress = function(e) {
+      if (e.keyCode === 13)
+        form.submit();
+    };

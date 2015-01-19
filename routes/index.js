@@ -34,8 +34,8 @@ router.post('/login', function(req, res, next) {
                     res.send('No such user and/or password');
                 }
                 session.username = username;
-                res.location("/");
-                res.redirect("/");
+                res.location("/figures/");
+                res.redirect("/figures/");
             });
         }
     });
