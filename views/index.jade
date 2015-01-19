@@ -1,0 +1,19 @@
+extends layout
+
+block content
+  h1= title
+  if username
+    p= username
+  else
+    form#formLogin(name="login",method="post",action="/login")
+      input#inputUsername(type="text",placeholder="username",name="username")
+      input#inputPassword(type="password",placeholder="password",name="password")
+    a(href="/newuser") new user
+  p Welcome to #{title}
+
+  script.
+    var form = document.getElementById("formLogin");
+    form.onkeypress = function(e) {
+      if (e.keyCode === 13)
+        form.submit();
+    };
