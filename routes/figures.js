@@ -2,110 +2,13 @@ var express = require('express');
 var router = express.Router();
 var http = require('http');
 var url = require('url');
+var importmfc = require('./importmfc');
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
     var session = req.session;
     res.render('figures', { username: session.username });
 });
-
-function parsePictures(gallery, db, username, figureid)
-{
-    var images = db.get('images');
-    var figuresimages = db.get('figuresimages');
-    var picids = [];
-    if (!(gallery.picture instanceof Array))
-        gallery.picture = [gallery.picture];
-    for (var i in gallery.picture) {
-        var pic = gallery.picture[i];
-        var src = pic.full;
-        var cat = pic.category;
-        var id = parseInt(pic.id);
-        console.log("!      parse picture " + id + " for item " + figureid);
-        if (cat.name === "Official") {
-            // official picture, get it
-            picids.push(id);
-
-            (function(id, src) {
-                var u = url.parse(src);
-                http.get({
-                    hostname: u.hostname,
-                    port: u.port || 80,
-                    path: u.path
-                }, function(res) {
-                    var image = '';
-                    res.setEncoding('binary');
-                    res.on('data', function(chunk) {
-                        image += chunk;
-                    });
-                    res.on('end', function() {
-                        // store image
-                        images.insert({picid: id, data: image});
-                    });
-                });
-            })(id, src);
-        }
-    }
-    //console.log('figuresimages.update({figureid: ' + figureid + '},{"$push": {images: {"$each": ' + JSON.stringify(picids) + '}}});');
-
-    figuresimages.update({figureid: figureid},
-                         {"$push": {
-                             images: {
-                                 "$each": picids
-                             }
-                         }});
-}
-
-function parseOwned(owned, db, username) {
-    var figures = db.get('figures');
-    var figuresimages = db.get('figuresimages');
-    if (!(owned.item instanceof Array))
-        owned.item = [owned.item];
-    for (var i in owned.item) {
-        var item = owned.item[i];
-        var id = parseInt(item.data.id);
-        console.log("!  parse item " + id);
-        var name = item.data.name;
-        var released = item.data.release_date;
-        var price = item.data.price;
-        // get the pictures
-
-        (function(id) {
-            figures.insert({figureid: id, name: name, released: released, price: price});
-            figuresimages.insert({figureid: id, images: []}, function(err, doc) {
-                if (err)
-                    return;
-                var gallery = function(id, page, pages) {
-                    http.get({
-                        hostname: 'myfigurecollection.net',
-                        port: 80,
-                        path: '/api.php?mode=gallery&type=json&item=' + id + '&page=' + page
-                    }, function(res) {
-                        var data = "";
-                        res.on('data', function(chunk) {
-                            data += chunk;
-                        });
-                        res.on('end', function() {
-                            var json = JSON.parse(data).gallery;
-                            // find all the official images
-                            console.log("!    parse pictures page for " + id + " page " + page + ", remaining " + pages);
-                            if (json.picture)
-                                parsePictures(json, db, username, id);
-                            if (pages === undefined)
-                                pages = parseInt(json.num_pages);
-                            --pages;
-                            if (pages > 0) {
-                                ++page;
-                                gallery(id, page, pages);
-                            }
-                        });
-                    });
-                };
-                gallery(id, 1);
-            });
-        })(id);
-    }
-};
 
 router.get('/import', function(req, res, next) {
     var user = req.query.importuser;
@@ -126,7 +29,7 @@ router.get('/import', function(req, res, next) {
                     var owned = obj.collection.owned;
                     console.log("!parse collection page " + page);
                     if (owned.item)
-                        parseOwned(owned, req.db, req.session.username);
+                        importmfc.parseOwned(owned, req.db, req.session.username);
                     if (pages === undefined)
                         pages = parseInt(owned.num_pages);
                     --pages;
@@ -175,37 +78,104 @@ router.get('/list/figure', function(req, res, next) {
     var figures = req.db.get('figures');
     var promise = figures.find({figureid: figureid}, {});
     promise.on('success', function(doc) {
+        if (!doc.length) {
+            res.send('No figure');
+            return;
+        }
+        var figure = doc[0];
         // find the images
         var images = req.db.get('images');
         var figuresimages = req.db.get('figuresimages');
-        var imagearray = [];
         promise = figuresimages.find({figureid: figureid}, {});
         promise.on('success', function(doc) {
             if (!doc.length) {
                 res.send('No images');
                 return;
             }
-            res.render('listfigure', { images: doc[0].images || [] });
+            res.render('listfigure', { name: figure.name, images: doc[0].images || [], figure: figure.figureid });
         });
     });
 });
 
+function filterInt(value) {
+    if(/^(\-|\+)?([0-9]+|Infinity)$/.test(value))
+        return Number(value);
+    return NaN;
+}
+
 router.get('/list/image', function(req, res, next) {
-    var imageid = parseInt(req.query.id);
+    var images = req.db.get('images');
+    var imageid = filterInt(req.query.id) || images.id(req.query.id);
     if (!imageid) {
         res.send('Invalid id');
         return;
     }
-    var images = req.db.get('images');
     var promise = images.find({picid: imageid}, {});
     promise.on('success', function(doc) {
+        console.log(typeof doc, imageid);
         if (!doc.length) {
             res.send('No data');
             return;
         }
         res.setHeader('content-type', 'image/jpeg');
-        res.end(doc[0].data, 'binary');
+        if (typeof doc[0].data === 'object' && doc[0].data.buffer)
+            res.end(doc[0].data.buffer, 'binary');
+        else
+            res.end(doc[0].data, 'binary');
     });
+});
+
+router.get('/remove/image', function(req, res, next) {
+    var images = req.db.get('images');
+    var imageid = filterInt(req.query.id) || images.id(req.query.id);
+    var figureid = parseInt(req.query.figureid);
+    if (!imageid || !figureid) {
+        res.send('Invalid id');
+        return;
+    }
+    var db = req.db;
+
+    var images = db.get('images');
+    images.remove({picid: imageid});
+
+    var figuresimages = db.get('figuresimages');
+    var promise = figuresimages.update({figureid: figureid},
+                                       {"$pull": {
+                                           images: imageid
+                                       }});
+    promise.on('complete', function() {
+        res.location("/figures/list/figure?id=" + figureid);
+        res.redirect("/figures/list/figure?id=" + figureid);
+    });
+});
+
+router.all('/add/image', function(req, res, next) {
+    var id = parseInt(req.query.id || req.body.id);
+    if (!id) {
+        res.send('Invalid id');
+        return;
+    }
+
+    var path = req.files && req.files.path;
+    if (path) {
+        var images = req.db.get('images');
+        var figuresimages = req.db.get('figuresimages');
+        var imgid = images.id();
+        console.log('new image', imgid);
+        var promise = images.insert({picid: imgid, data: path.buffer});
+        promise.on('success', function() {
+            promise = figuresimages.update({figureid: id},
+                                           {"$push": {
+                                               images: imgid
+                                           }});
+            promise.on('success', function() {
+                res.location("/figures/list/figure?id=" + id);
+                res.redirect("/figures/list/figure?id=" + id);
+            });
+        });
+    } else {
+        res.render('addimage', { figure: id });
+    }
 });
 
 module.exports = router;

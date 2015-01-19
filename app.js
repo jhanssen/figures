@@ -1,5 +1,6 @@
 var express = require('express');
 var session = require('express-session');
+var multer = require('multer');
 var path = require('path');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
@@ -26,6 +27,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({ secret: 'figures', resave: false, saveUninitialized: true }));
+app.use(multer({ inMemory: true }));
 
 app.use(function(req, res, next) {
     req.db = db;

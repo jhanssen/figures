@@ -1,0 +1,10 @@
+extends layout
+
+block content
+  h1 Add image
+  form#formLogin(name="login",method="post",action="/figures/add/image",enctype="multipart/form-data")
+    input#inputFigure(type="hidden",name="id",value="#{figure}")
+    input#inputPath(type="file",placeholder="path",name="path")
+    br
+    button#buttonSubmit(type="submit") submit
+  a(href="/figures/list/figure?id=#{figure}") Back

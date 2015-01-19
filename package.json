@@ -16,6 +16,7 @@
     "serve-favicon": "~2.2.0",
     "mongodb": "*",
     "monk": "*",
-    "bcrypt": "*"
+    "bcrypt": "*",
+    "multer": "*"
   }
 }
