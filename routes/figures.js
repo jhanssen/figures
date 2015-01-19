@@ -83,17 +83,7 @@ router.get('/list/figure', function(req, res, next) {
             return;
         }
         var figure = doc[0];
-        // find the images
-        var images = req.db.get('images');
-        var figuresimages = req.db.get('figuresimages');
-        promise = figuresimages.find({figureid: figureid}, {});
-        promise.on('success', function(doc) {
-            if (!doc.length) {
-                res.send('No images');
-                return;
-            }
-            res.render('listfigure', { name: figure.name, images: doc[0].images || [], figure: figure.figureid });
-        });
+        res.render('listfigure', { name: figure.name, images: doc[0].images || [], figure: figure.figureid, notes: figure.notes });
     });
 });
 
@@ -133,16 +123,13 @@ router.get('/remove/image', function(req, res, next) {
         res.send('Invalid id');
         return;
     }
-    var db = req.db;
-
-    var images = db.get('images');
     images.remove({picid: imageid});
 
-    var figuresimages = db.get('figuresimages');
-    var promise = figuresimages.update({figureid: figureid},
-                                       {"$pull": {
-                                           images: imageid
-                                       }});
+    var figures = req.db.get('figures');
+    var promise = figures.update({figureid: figureid},
+                                 {"$pull": {
+                                     images: imageid
+                                 }});
     promise.on('complete', function() {
         res.location("/figures/list/figure?id=" + figureid);
         res.redirect("/figures/list/figure?id=" + figureid);
@@ -159,15 +146,15 @@ router.all('/add/image', function(req, res, next) {
     var path = req.files && req.files.path;
     if (path) {
         var images = req.db.get('images');
-        var figuresimages = req.db.get('figuresimages');
+        var figures = req.db.get('figures');
         var imgid = images.id();
         console.log('new image', imgid);
         var promise = images.insert({picid: imgid, data: path.buffer});
         promise.on('success', function() {
-            promise = figuresimages.update({figureid: id},
-                                           {"$push": {
-                                               images: imgid
-                                           }});
+            promise = figures.update({figureid: id},
+                                     {"$push": {
+                                         images: imgid
+                                     }});
             promise.on('success', function() {
                 res.location("/figures/list/figure?id=" + id);
                 res.redirect("/figures/list/figure?id=" + id);

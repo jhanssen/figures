@@ -5,8 +5,8 @@ var importmfc = {};
 
 importmfc.parsePictures = function(gallery, db, username, figureid)
 {
+    var figures = db.get('figures');
     var images = db.get('images');
-    var figuresimages = db.get('figuresimages');
     var picids = [];
     if (!(gallery.picture instanceof Array))
         gallery.picture = [gallery.picture];
@@ -40,19 +40,17 @@ importmfc.parsePictures = function(gallery, db, username, figureid)
             })(id, src);
         }
     }
-    //console.log('figuresimages.update({figureid: ' + figureid + '},{"$push": {images: {"$each": ' + JSON.stringify(picids) + '}}});');
 
-    figuresimages.update({figureid: figureid},
-                         {"$push": {
-                             images: {
-                                 "$each": picids
-                             }
-                         }});
+    figures.update({figureid: figureid},
+                   {"$push": {
+                       images: {
+                           "$each": picids
+                       }
+                   }});
 };
 
 importmfc.parseOwned = function(owned, db, username) {
     var figures = db.get('figures');
-    var figuresimages = db.get('figuresimages');
     if (!(owned.item instanceof Array))
         owned.item = [owned.item];
     for (var i in owned.item) {
@@ -65,8 +63,9 @@ importmfc.parseOwned = function(owned, db, username) {
         // get the pictures
 
         (function(id) {
-            figures.insert({figureid: id, name: name, released: released, price: price});
-            figuresimages.insert({figureid: id, images: []}, function(err, doc) {
+            figures.insert({
+                figureid: id, name: name, released: released, price: price, images: [], notes: []
+            }, function(err, doc) {
                 if (err)
                     return;
                 var gallery = function(id, page, pages) {
