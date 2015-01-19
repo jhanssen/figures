@@ -9,16 +9,6 @@ router.get('/', function(req, res, next) {
     res.render('index', { title: 'Express', username: session.username });
 });
 
-router.get('/users', function(req, res) {
-    var db = req.db;
-    var users = db.get('users');
-    users.find({}, {}, function(e, docs) {
-        res.render('users', {
-            "users": docs
-        });
-    });
-});
-
 router.get('/newuser', function(req, res) {
     res.render('newuser', { title: 'Add new user' });
 });

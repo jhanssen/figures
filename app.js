@@ -10,7 +10,7 @@ var monk = require('monk');
 var db = monk('localhost:27017/figures');
 
 var routes = require('./routes/index');
-var users = require('./routes/users');
+var figures = require('./routes/figures');
 
 var app = express();
 
@@ -32,7 +32,15 @@ app.use(function(req, res, next) {
     next();
 });
 app.use('/', routes);
-app.use('/users', users);
+app.use('/figures', function(req, res, next) {
+    var session = req.session;
+    if (!session.username) {
+        res.send('Not logged in');
+        return;
+    }
+    next();
+});
+app.use('/figures', figures);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
