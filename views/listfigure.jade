@@ -4,12 +4,12 @@ block content
   h1 Figure
   h2= name
 
-  a(href="/figures/add/image?id=#{figure}") +note
+  a(href="/figures/add/note?id=#{figure}") +note
   ul
     each note, i in notes
       li
-        div= note.text
-        a(href="/figures/remove/note?id=#{note.id}")
+        div !{note.note.replace(/\n/g, '<br/>')}
+        a(href="/figures/remove/note?id=#{note.noteid}&figureid=#{figure}") -
   a(href="/figures/add/image?id=#{figure}") +image
   ul
     each item, i in images
