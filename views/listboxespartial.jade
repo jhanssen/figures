@@ -1,0 +1,11 @@
+each item, i in boxes
+  li
+    div !{item.box.replace(/\n/g, '<br/>')}
+      a(href="/figures/remove/box?id=#{item._id}") -
+      a(href="/figures/add/boxfigure?id=#{item._id}") +
+    ul
+      each fig, i in item.figures
+        li
+          a(href="/figures/list/figure?id=#{fig.toHexString()}") !{figures[fig.toHexString()].name}
+          = ' '
+          a(href="/figures/remove/boxfigure?id=#{item._id}&figureid=#{fig}") -

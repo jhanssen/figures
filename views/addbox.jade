@@ -1,0 +1,9 @@
+extends layout
+
+block content
+  h1 Add box
+  form#formLogin(name="login",method="post",action="/figures/add/box")
+    input#inputBox(type="text",placeholder="name",name="box")
+    br
+    button#buttonSubmit(type="submit") submit
+  a(href="/figures/list/boxes") Back
