@@ -8,8 +8,6 @@ importmfc.parsePictures = function(gallery, db, username, figureid)
     var figures = db.get('figures');
     var images = db.get('images');
     var picids = [];
-    if (!(gallery.picture instanceof Array))
-        gallery.picture = [gallery.picture];
     for (var i in gallery.picture) {
         var pic = gallery.picture[i];
         var src = pic.full;
@@ -18,9 +16,10 @@ importmfc.parsePictures = function(gallery, db, username, figureid)
         console.log("!      parse picture " + id + " for item " + figureid);
         if (cat.name === "Official") {
             // official picture, get it
-            picids.push(id);
+            var genid = images.id();
+            picids.push(genid);
 
-            (function(id, src) {
+            (function(id, genid, src) {
                 var u = url.parse(src);
                 http.get({
                     hostname: u.hostname,
@@ -34,14 +33,14 @@ importmfc.parsePictures = function(gallery, db, username, figureid)
                     });
                     res.on('end', function() {
                         // store image
-                        images.insert({picid: id, data: image});
+                        images.insert({_id: genid, mfcid: id, data: image});
                     });
                 });
-            })(id, src);
+            })(id, genid, src);
         }
     }
 
-    figures.update({figureid: figureid},
+    figures.update({_id: figureid},
                    {"$push": {
                        images: {
                            "$each": picids
@@ -56,19 +55,20 @@ importmfc.parseOwned = function(owned, db, username) {
     for (var i in owned.item) {
         var item = owned.item[i];
         var id = parseInt(item.data.id);
+        var genid = figures.id();
         console.log("!  parse item " + id);
         var name = item.data.name;
         var released = item.data.release_date;
         var price = item.data.price;
         // get the pictures
 
-        (function(id) {
+        (function(id, genid) {
             figures.insert({
-                figureid: id, name: name, released: released, price: price, images: [], notes: []
+                _id: genid, mfcid: id, name: name, released: released, price: price, images: [], notes: []
             }, function(err, doc) {
                 if (err)
                     return;
-                var gallery = function(id, page, pages) {
+                var gallery = function(genid, page, pages) {
                     http.get({
                         hostname: 'myfigurecollection.net',
                         port: 80,
@@ -82,21 +82,24 @@ importmfc.parseOwned = function(owned, db, username) {
                             var json = JSON.parse(data).gallery;
                             // find all the official images
                             console.log("!    parse pictures page for " + id + " page " + page + ", remaining " + pages);
-                            if (json.picture)
-                                importmfc.parsePictures(json, db, username, id);
+                            if (json.picture) {
+                                if (!(json.picture instanceof Array))
+                                    json.picture = [json.picture];
+                                importmfc.parsePictures(json, db, username, genid);
+                            }
                             if (pages === undefined)
                                 pages = parseInt(json.num_pages);
                             --pages;
                             if (pages > 0) {
                                 ++page;
-                                gallery(id, page, pages);
+                                gallery(genid, page, pages);
                             }
                         });
                     });
                 };
-                gallery(id, 1);
+                gallery(genid, 1);
             });
-        })(id);
+        })(id, genid);
     }
 };
 

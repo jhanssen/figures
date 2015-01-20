@@ -9,7 +9,7 @@ block content
     each note, i in notes
       li
         div !{note.note.replace(/\n/g, '<br/>')}
-        a(href="/figures/remove/note?id=#{note.noteid}&figureid=#{figure}") -
+        a(href="/figures/remove/note?id=#{note._id}&figureid=#{figure}") -
   a(href="/figures/add/image?id=#{figure}") +image
   ul
     each item, i in images

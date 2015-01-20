@@ -70,13 +70,13 @@ router.get('/list/figures', function(req, res, next) {
 });
 
 router.get('/list/figure', function(req, res, next) {
-    var figureid = parseInt(req.query.id);
+    var figures = req.db.get('figures');
+    var figureid = figures.id(req.query.id);
     if (!figureid) {
         res.send('Invalid id');
         return;
     }
-    var figures = req.db.get('figures');
-    var promise = figures.find({figureid: figureid}, {});
+    var promise = figures.find({_id: figureid}, {});
     promise.on('success', function(doc) {
         if (!doc.length) {
             res.send('No figure');
@@ -86,30 +86,24 @@ router.get('/list/figure', function(req, res, next) {
         var figure = doc[0];
 
         if (figure.notes.length) {
-            var promise = notes.find({noteid: {"$in": figure.notes}});
+            var promise = notes.find({_id: {"$in": figure.notes}});
             promise.on('success', function(doc) {
-                res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure.figureid, notes: doc });
+                res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: doc });
             });
         } else {
-            res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure.figureid, notes: [] });
+            res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: [] });
         }
     });
 });
 
-function filterInt(value) {
-    if(/^(\-|\+)?([0-9]+|Infinity)$/.test(value))
-        return Number(value);
-    return NaN;
-}
-
 router.get('/list/image', function(req, res, next) {
     var images = req.db.get('images');
-    var imageid = filterInt(req.query.id) || images.id(req.query.id);
+    var imageid = images.id(req.query.id);
     if (!imageid) {
         res.send('Invalid id');
         return;
     }
-    var promise = images.find({picid: imageid}, {});
+    var promise = images.find({_id: imageid}, {});
     promise.on('success', function(doc) {
         console.log(typeof doc, imageid);
         if (!doc.length) {
@@ -126,16 +120,16 @@ router.get('/list/image', function(req, res, next) {
 
 router.get('/remove/image', function(req, res, next) {
     var images = req.db.get('images');
-    var imageid = filterInt(req.query.id) || images.id(req.query.id);
-    var figureid = parseInt(req.query.figureid);
+    var figures = req.db.get('figures');
+    var imageid = images.id(req.query.id);
+    var figureid = figures.id(req.query.figureid);
     if (!imageid || !figureid) {
         res.send('Invalid id');
         return;
     }
-    images.remove({picid: imageid});
+    images.remove({_id: imageid});
 
-    var figures = req.db.get('figures');
-    var promise = figures.update({figureid: figureid},
+    var promise = figures.update({_id: figureid},
                                  {"$pull": {
                                      images: imageid
                                  }});
@@ -146,7 +140,8 @@ router.get('/remove/image', function(req, res, next) {
 });
 
 router.all('/add/image', function(req, res, next) {
-    var id = parseInt(req.query.id || req.body.id);
+    var figures = req.db.get('figures');
+    var id = figures.id(req.query.id || req.body.id);
     if (!id) {
         res.send('Invalid id');
         return;
@@ -155,12 +150,11 @@ router.all('/add/image', function(req, res, next) {
     var path = req.files && req.files.path;
     if (path) {
         var images = req.db.get('images');
-        var figures = req.db.get('figures');
         var imgid = images.id();
         console.log('new image', imgid);
-        var promise = images.insert({picid: imgid, data: path.buffer});
+        var promise = images.insert({_id: imgid, data: path.buffer});
         promise.on('success', function() {
-            promise = figures.update({figureid: id},
+            promise = figures.update({_id: id},
                                      {"$push": {
                                          images: imgid
                                      }});
@@ -175,7 +169,8 @@ router.all('/add/image', function(req, res, next) {
 });
 
 router.all('/add/note', function(req, res, next) {
-    var id = parseInt(req.query.id || req.body.id);
+    var figures = req.db.get('figures');
+    var id = figures.id(req.query.id || req.body.id);
     if (!id) {
         res.send('Invalid id');
         return;
@@ -184,11 +179,10 @@ router.all('/add/note', function(req, res, next) {
     var note = req.body.note;
     if (note) {
         var notes = req.db.get('notes');
-        var figures = req.db.get('figures');
         var noteid = notes.id();
-        var promise = notes.insert({noteid: noteid, note: note, figures: [id]});
+        var promise = notes.insert({_id: noteid, note: note, figures: [id]});
         promise.on('success', function() {
-            promise = figures.update({figureid: id},
+            promise = figures.update({_id: id},
                                       {"$push": {
                                           notes: noteid
                                       }});
@@ -207,7 +201,7 @@ router.get('/remove/note', function(req, res, next) {
     var figures = req.db.get('figures');
 
     var noteid = notes.id(req.query.id);
-    var figureid = parseInt(req.query.figureid);
+    var figureid = figures.id(req.query.figureid);
     if (!noteid) {
         res.send('Invalid id');
         return;
@@ -215,11 +209,11 @@ router.get('/remove/note', function(req, res, next) {
 
     var promise;
     if (!figureid) {
-        notes.remove({noteid: noteid});
+        notes.remove({_id: noteid});
         // remove the note from all figures
         promise = figures.update({}, {"$pull": { notes: noteid }});
     } else {
-        promise = figures.update({figureid: figureid},
+        promise = figures.update({_id: figureid},
                                  {"$pull": {
                                      notes: noteid
                                  }});
@@ -246,7 +240,7 @@ router.get('/list/notes', function(req, res, next) {
         promise.on('success', function(doc) {
             var figmap = {};
             for (var i in doc) {
-                figmap[doc[i].figureid] = doc[i];
+                figmap[doc[i]._id] = doc[i];
             }
             res.render('listnotes', { notes: allnotes, figures: figmap });
         });
