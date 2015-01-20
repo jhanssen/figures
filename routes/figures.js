@@ -201,6 +201,22 @@ router.all('/add/note', function(req, res, next) {
     }
 });
 
+router.all('/add/box', function(req, res, next) {
+    var box = req.body.box;
+    if (box) {
+        var boxes = req.db.get('boxes');
+        var promise = boxes.insert({box: box, figures: []});
+        promise.on('success', function() {
+            promise.on('success', function() {
+                res.location("/figures/list/boxes");
+                res.redirect("/figures/list/boxes");
+            });
+        });
+    } else {
+        res.render('addbox');
+    }
+});
+
 router.all('/add/figure', function(req, res, next) {
     var name = req.body.name;
     if (name) {
@@ -249,10 +265,15 @@ router.get('/remove/note', function(req, res, next) {
         // remove the note from all figures
         promise = figures.update({}, {"$pull": { notes: noteid }});
     } else {
+        notes.update({_id: noteid},
+                     {"$pull": {
+                         figures: figureid
+                     }});
         promise = figures.update({_id: figureid},
                                  {"$pull": {
                                      notes: noteid
                                  }});
+
     }
     promise.on('complete', function() {
         if (figureid) {
@@ -298,6 +319,55 @@ router.all('/add/notefigure', function(req, res, next) {
     }
 });
 
+router.all('/add/boxfigure', function(req, res, next) {
+    var figures = req.db.get('figures');
+    var boxes = req.db.get('boxes');
+    if (!req.query.hasOwnProperty('id') && !req.body.hasOwnProperty('id')) {
+        res.send('Invalid id');
+        return;
+    }
+    var promise;
+    var id = boxes.id(req.query.id || req.body.id);
+    var check = req.body.check;
+    if (typeof check === "string")
+        check = [check];
+    if (check && check instanceof Array) {
+        var figids = [];
+        for (var i in check) {
+            figids.push(figures.id(check[i]));
+        }
+        promise = boxes.update({_id: id},{"$push": {figures: {"$each": figids}}});
+        promise.on('success', function() {
+            promise = figures.update({_id: {"$in": figids}},{"$push": {boxes: id}});
+            promise.on('success', function() {
+                res.location("/figures/list/boxes/");
+                res.redirect("/figures/list/boxes/");
+            });
+        });
+    } else {
+        promise = figures.find({}, {});
+        promise.on('success', function(doc) {
+            res.render('figureselector', { figures: doc, selector: true, id: id, path: '/figures/add/boxfigure', figureSelected: {} });
+        });
+    }
+});
+
+router.get('/remove/boxfigure', function(req, res, next) {
+    var figures = req.db.get('figures');
+    var boxes = req.db.get('boxes');
+    if (!req.query.hasOwnProperty('id') || !req.query.hasOwnProperty('figureid')) {
+        res.send('Invalid id');
+        return;
+    }
+    var boxid = boxes.id(req.query.id);
+    var figureid = figures.id(req.query.figureid);
+    var promise = boxes.update({_id: boxid}, {"$pull": {figures: figureid}});
+    promise.on('success', function() {
+        res.location("/figures/list/boxes/");
+        res.redirect("/figures/list/boxes/");
+    });
+});
+
 router.get('/list/notes', function(req, res, next) {
     var notes = req.db.get('notes');
     var hassearch = req.query.hasOwnProperty('search');
@@ -319,12 +389,30 @@ router.get('/list/notes', function(req, res, next) {
             for (var i in doc) {
                 figmap[doc[i]._id.toHexString()] = doc[i];
             }
-            console.log(JSON.stringify(figmap));
+            //console.log(JSON.stringify(figmap));
             if (hassearch) {
                 res.render('listnotespartial', { notes: allnotes, figures: figmap });
             } else {
                 res.render('listnotes', { notes: allnotes, figures: figmap });
             }
+        });
+    });
+});
+
+router.get('/list/boxes', function(req, res, next) {
+    var boxes = req.db.get('boxes');
+    var promise = boxes.find({}, {});
+    promise.on('success', function(doc) {
+        // get the figures
+        var allboxes = doc;
+        var figures = req.db.get('figures');
+        promise = figures.find({},{});
+        promise.on('success', function(doc) {
+            var figmap = {};
+            for (var i in doc) {
+                figmap[doc[i]._id.toHexString()] = doc[i];
+            }
+            res.render('listboxes', { boxes: allboxes, figures: figmap });
         });
     });
 });
