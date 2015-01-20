@@ -32,6 +32,7 @@ router.post('/login', function(req, res, next) {
             bcrypt.compare(pwd, dbpwd, function(err, pwdres) {
                 if (err || !pwdres) {
                     res.send('No such user and/or password');
+                    return;
                 }
                 session.username = username;
                 res.location("/figures/");
