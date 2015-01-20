@@ -1,0 +1,17 @@
+form#formSearch(name="search")
+  input#inputSearch(type="text",placeholder="search",name="username")
+ul(id="results")
+  include ./listfigurespartial.jade
+  script.
+  var input = document.getElementById("inputSearch");
+  input.onkeyup = function(e) {
+    var req = new XMLHttpRequest();
+    req.onreadystatechange = function() {
+      if (req.readyState==4 && req.status==200) {
+        var ul = document.getElementById("results");
+        ul.innerHTML = req.responseText;
+      }
+    };
+    req.open('GET', '/figures/list/figures?search=' + input.value);
+    req.send();
+  };

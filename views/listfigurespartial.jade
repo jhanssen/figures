@@ -1,5 +1,10 @@
 each item, i in figures
   li
-    a(href="/figures/list/figure?id=#{item._id}")= item.name
-    = ' '
-    a(href="/figures/remove/figure?id=#{item._id}") -
+    if selector
+      input(id="figure#{item._id}",type="checkbox",checked=figureSelected[item._id])
+      = ' '
+      = item.name
+    else
+      a(href="/figures/list/figure?id=#{item._id}")= item.name
+      = ' '
+      a(href="/figures/remove/figure?id=#{item._id}") -

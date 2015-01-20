@@ -261,6 +261,17 @@ router.get('/remove/note', function(req, res, next) {
     });
 });
 
+router.all('/add/notefigure', function(req, res, next) {
+    var figures = req.db.get('figures');
+    if (!req.query.hasOwnProperty('id') && !req.body.hasOwnProperty('id')) {
+        res.send('Invalid id');
+        return;
+    }
+    var id = figures.id(req.query.id || req.body.id);
+
+    res.render('selectfigures', { selector: true, id: id, path: '/figures/add/notefigure' });
+});
+
 router.get('/list/notes', function(req, res, next) {
     var notes = req.db.get('notes');
     var hassearch = req.query.hasOwnProperty('search');
