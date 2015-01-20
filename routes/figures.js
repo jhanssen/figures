@@ -352,6 +352,20 @@ router.all('/add/boxfigure', function(req, res, next) {
     }
 });
 
+router.get('/remove/box', function(req, res, next) {
+    var boxes = req.db.get('boxes');
+    if (!req.query.hasOwnProperty('id')) {
+        res.send('Invalid id');
+        return;
+    }
+    var boxid = boxes.id(req.query.id);
+    var promise = boxes.remove({_id: boxid});
+    promise.on('success', function() {
+        res.location("/figures/list/boxes/");
+        res.redirect("/figures/list/boxes/");
+    });
+});
+
 router.get('/remove/boxfigure', function(req, res, next) {
     var figures = req.db.get('figures');
     var boxes = req.db.get('boxes');
