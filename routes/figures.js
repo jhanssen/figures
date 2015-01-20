@@ -47,7 +47,6 @@ router.get('/import', function(req, res, next) {
 });
 
 router.get('/list/figures', function(req, res, next) {
-    var user = req.session.username;
     var search = req.query.search;
     var db = req.db;
     var figures = db.get('figures');
@@ -59,12 +58,17 @@ router.get('/list/figures', function(req, res, next) {
         promise = figures.find({}, {});
     }
     if (req.query.hasOwnProperty("search")) {
+        var selector = req.query.hasOwnProperty("selector");
+        var selected = {};
+        if (req.query.hasOwnProperty("selected")) {
+            selected = JSON.parse(req.query.selected);
+        }
         promise.on('success', function(doc) {
-            res.render('listfigurespartial', { figures: doc });
+            res.render('listfigurespartial', { figures: doc, figureSelected: selected, selector: selector });
         });
     } else {
         promise.on('success', function(doc) {
-            res.render('listfigures', { figures: doc });
+            res.render('listfigures', { figures: doc, figureSelected: {}, selector: false });
         });
     }
 });
@@ -263,13 +267,35 @@ router.get('/remove/note', function(req, res, next) {
 
 router.all('/add/notefigure', function(req, res, next) {
     var figures = req.db.get('figures');
+    var notes = req.db.get('notes');
     if (!req.query.hasOwnProperty('id') && !req.body.hasOwnProperty('id')) {
         res.send('Invalid id');
         return;
     }
-    var id = figures.id(req.query.id || req.body.id);
-
-    res.render('figureselector', { selector: true, id: id, path: '/figures/add/notefigure' });
+    var promise;
+    var id = notes.id(req.query.id || req.body.id);
+    var check = req.body.check;
+    if (typeof check === "string")
+        check = [check];
+    if (check && check instanceof Array) {
+        var figids = [];
+        for (var i in check) {
+            figids.push(figures.id(check[i]));
+        }
+        promise = notes.update({_id: id},{"$push": {figures: {"$each": figids}}});
+        promise.on('success', function() {
+            promise = figures.update({_id: {"$in": figids}},{"$push": {notes: id}});
+            promise.on('success', function() {
+                res.location("/figures/list/notes/");
+                res.redirect("/figures/list/notes/");
+            });
+        });
+    } else {
+      promise = figures.find({}, {});
+      promise.on('success', function(doc) {
+          res.render('figureselector', { figures: doc, selector: true, id: id, path: '/figures/add/notefigure', figureSelected: {} });
+      });
+    }
 });
 
 router.get('/list/notes', function(req, res, next) {
@@ -291,8 +317,9 @@ router.get('/list/notes', function(req, res, next) {
         promise.on('success', function(doc) {
             var figmap = {};
             for (var i in doc) {
-                figmap[doc[i]._id.str] = doc[i];
+                figmap[doc[i]._id.toHexString()] = doc[i];
             }
+            console.log(JSON.stringify(figmap));
             if (hassearch) {
                 res.render('listnotespartial', { notes: allnotes, figures: figmap });
             } else {

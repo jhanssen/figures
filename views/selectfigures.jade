@@ -1,10 +1,10 @@
-form#formSearch(name="search")
-  input#inputSearch(type="text",placeholder="search",name="username")
-
 ul(id="results")
   include ./listfigurespartial.jade
 
 script.
+  var selector = !{selector};
+  var selected = !{JSON.stringify(figureSelected)};
+
   var input = document.getElementById("inputSearch");
   input.onkeyup = function(e) {
     var req = new XMLHttpRequest();
@@ -14,6 +14,19 @@ script.
         ul.innerHTML = req.responseText;
       }
     };
-    req.open('GET', '/figures/list/figures?search=' + input.value);
+    var q = '/figures/list/figures?search=' + input.value;
+    if (selector) {
+      // toggle things
+      var inputs = document.getElementsByTagName('input');
+      for (var i = 0; i < inputs.length; ++i) {
+        var field = inputs[i];
+        if (field.type === "checkbox") {
+          selected[field.id] = field.checked;
+        }
+      }
+
+      q += '&selector&selected=' + JSON.stringify(selected);
+    }
+    req.open('GET', q);
     req.send();
   };

@@ -5,4 +5,5 @@ each item, i in notes
       a(href="/figures/add/notefigure?id=#{item._id}") +
     ul
       each fig, i in item.figures
-        li !{figures[fig.str].name}
+        li
+          a(href="/figures/list/figure?id=#{fig.toHexString()}") !{figures[fig.toHexString()].name}

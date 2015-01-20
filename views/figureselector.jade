@@ -1,11 +1,12 @@
 extends layout
 
 block content
-  h1 Select igures
+  h1 Select figures
+
+  form#formSearch(name="search")
+    input#inputSearch(type="text",placeholder="search",name="username")
 
   form#formSelect(name="select",method="post",action="#{path}")
     input#inputFigure(type="hidden",name="id",value="#{id}")
-
     include ./selectfigures.jade
-
-    button#buttonSubmit(type="button") select
+    button#buttonSubmit(type="submit") select

@@ -1,7 +1,7 @@
 each item, i in figures
   li
     if selector
-      input(id="figure#{item._id}",type="checkbox",checked=figureSelected[item._id])
+      input(id="#{item._id}",type="checkbox",checked=figureSelected[item._id],name="check",value="#{item._id}")
       = ' '
       = item.name
     else
