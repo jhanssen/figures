@@ -1,0 +1,9 @@
+extends layout
+
+block content
+  h1 Add figure
+  form#formAddFigure(name="addfigure",method="post",action="/figures/add/figure")
+    input#inputName(type="text",placeholder="name",name="name")
+    br
+    button#buttonSubmit(type="submit") submit
+  a(href="/figures/list/figures") Back

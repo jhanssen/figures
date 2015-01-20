@@ -1,0 +1,23 @@
+extends layout
+
+block content
+  h1 Notes
+
+  form#formSearch(name="search")
+    input#inputSearch(type="text",placeholder="search",name="search")
+  ul(id="results")
+    include ./listnotespartial.jade
+
+  script.
+    var input = document.getElementById("inputSearch");
+    input.onkeyup = function(e) {
+      var req = new XMLHttpRequest();
+      req.onreadystatechange = function() {
+        if (req.readyState==4 && req.status==200) {
+          var ul = document.getElementById("results");
+          ul.innerHTML = req.responseText;
+        }
+      };
+      req.open('GET', '/figures/list/notes?search=' + input.value);
+      req.send();
+    };

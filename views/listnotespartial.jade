@@ -1,0 +1,7 @@
+each item, i in notes
+  li
+    div !{item.note.replace(/\n/g, '<br/>')}
+      a(href="/figures/remove/note?id=#{item.noteid}") -
+    ul
+      each fig, i in item.figures
+        li !{figures[fig].name}

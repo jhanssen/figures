@@ -1,0 +1,10 @@
+extends layout
+
+block content
+  h1 Add note
+  form#formLogin(name="login",method="post",action="/figures/add/note")
+    input#inputFigure(type="hidden",name="id",value="#{figure}")
+    textarea#inputNote(placeholder="note",name="note",rows="20",cols="80")
+    br
+    button#buttonSubmit(type="submit") submit
+  a(href="/figures/list/figure?id=#{figure}") Back
