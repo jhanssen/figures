@@ -1,0 +1,11 @@
+extends layout
+
+block content
+  h1 Select igures
+
+  form#formSelect(name="select",method="post",action="#{path}")
+    input#inputFigure(type="hidden",name="id",value="#{id}")
+
+    include ./selectfigures.jade
+
+    button#buttonSubmit(type="button") select

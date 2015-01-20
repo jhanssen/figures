@@ -1,8 +1,10 @@
 form#formSearch(name="search")
   input#inputSearch(type="text",placeholder="search",name="username")
+
 ul(id="results")
   include ./listfigurespartial.jade
-  script.
+
+script.
   var input = document.getElementById("inputSearch");
   input.onkeyup = function(e) {
     var req = new XMLHttpRequest();

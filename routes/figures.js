@@ -269,7 +269,7 @@ router.all('/add/notefigure', function(req, res, next) {
     }
     var id = figures.id(req.query.id || req.body.id);
 
-    res.render('selectfigures', { selector: true, id: id, path: '/figures/add/notefigure' });
+    res.render('figureselector', { selector: true, id: id, path: '/figures/add/notefigure' });
 });
 
 router.get('/list/notes', function(req, res, next) {
