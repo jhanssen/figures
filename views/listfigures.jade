@@ -3,6 +3,9 @@ extends layout
 block content
   h1 Figures
 
+  div
+    a(href="/figures/add/figure") +
+
   form#formSearch(name="search")
     input#inputSearch(type="text",placeholder="search",name="username")
   ul(id="results")

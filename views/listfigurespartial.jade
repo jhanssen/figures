@@ -1,3 +1,5 @@
 each item, i in figures
   li
     a(href="/figures/list/figure?id=#{item._id}")= item.name
+    = ' '
+    a(href="/figures/remove/figure?id=#{item._id}") -

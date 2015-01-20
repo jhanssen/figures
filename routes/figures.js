@@ -71,11 +71,11 @@ router.get('/list/figures', function(req, res, next) {
 
 router.get('/list/figure', function(req, res, next) {
     var figures = req.db.get('figures');
-    var figureid = figures.id(req.query.id);
-    if (!figureid) {
+    if (!req.query.hasOwnProperty('id')) {
         res.send('Invalid id');
         return;
     }
+    var figureid = figures.id(req.query.id);
     var promise = figures.find({_id: figureid}, {});
     promise.on('success', function(doc) {
         if (!doc.length) {
@@ -98,11 +98,11 @@ router.get('/list/figure', function(req, res, next) {
 
 router.get('/list/image', function(req, res, next) {
     var images = req.db.get('images');
-    var imageid = images.id(req.query.id);
-    if (!imageid) {
+    if (!req.query.hasOwnProperty('id')) {
         res.send('Invalid id');
         return;
     }
+    var imageid = images.id(req.query.id);
     var promise = images.find({_id: imageid}, {});
     promise.on('success', function(doc) {
         console.log(typeof doc, imageid);
@@ -121,12 +121,12 @@ router.get('/list/image', function(req, res, next) {
 router.get('/remove/image', function(req, res, next) {
     var images = req.db.get('images');
     var figures = req.db.get('figures');
-    var imageid = images.id(req.query.id);
-    var figureid = figures.id(req.query.figureid);
-    if (!imageid || !figureid) {
+    if (!req.query.hasOwnProperty('id') || !req.query.hasOwnProperty('figureid')) {
         res.send('Invalid id');
         return;
     }
+    var imageid = images.id(req.query.id);
+    var figureid = figures.id(req.query.figureid);
     images.remove({_id: imageid});
 
     var promise = figures.update({_id: figureid},
@@ -141,11 +141,11 @@ router.get('/remove/image', function(req, res, next) {
 
 router.all('/add/image', function(req, res, next) {
     var figures = req.db.get('figures');
-    var id = figures.id(req.query.id || req.body.id);
-    if (!id) {
+    if (!req.query.hasOwnProperty('id') && !req.body.hasOwnProperty('id')) {
         res.send('Invalid id');
         return;
     }
+    var id = figures.id(req.query.id || req.body.id);
 
     var path = req.files && req.files.path;
     if (path) {
@@ -170,11 +170,11 @@ router.all('/add/image', function(req, res, next) {
 
 router.all('/add/note', function(req, res, next) {
     var figures = req.db.get('figures');
-    var id = figures.id(req.query.id || req.body.id);
-    if (!id) {
+    if (!req.query.hasOwnProperty('id') && !req.body.hasOwnProperty('id')) {
         res.send('Invalid id');
         return;
     }
+    var id = figures.id(req.query.id || req.body.id);
 
     var note = req.body.note;
     if (note) {
@@ -196,16 +196,45 @@ router.all('/add/note', function(req, res, next) {
     }
 });
 
-router.get('/remove/note', function(req, res, next) {
-    var notes = req.db.get('notes');
-    var figures = req.db.get('figures');
+router.all('/add/figure', function(req, res, next) {
+    var name = req.body.name;
+    if (name) {
+        var figures = req.db.get('figures');
+        var promise = figures.insert({name: name, images: [], notes: []});
+        promise.on('success', function() {
+            res.location("/figures/list/figures");
+            res.redirect("/figures/list/figures");
+        });
+    } else {
+        res.render('addfigure');
+    }
+});
 
-    var noteid = notes.id(req.query.id);
-    var figureid = figures.id(req.query.figureid);
-    if (!noteid) {
+router.get('/remove/figure', function(req, res, next) {
+    var figures = req.db.get('figures');
+    if (!req.query.hasOwnProperty('id')) {
         res.send('Invalid id');
         return;
     }
+    var figureid = figures.id(req.query.id);
+    console.log('removing ' + figureid);
+    var promise = figures.remove({_id: figureid});
+    promise.on('success', function() {
+        res.location("/figures/list/figures");
+        res.redirect("/figures/list/figures");
+    });
+});
+
+router.get('/remove/note', function(req, res, next) {
+    var notes = req.db.get('notes');
+    var figures = req.db.get('figures');
+    if (!req.query.hasOwnProperty('id')) {
+        res.send('Invalid id');
+        return;
+    }
+
+    var noteid = notes.id(req.query.id);
+    var figureid = figures.id(req.query.figureid);
 
     var promise;
     if (!figureid) {
