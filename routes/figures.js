@@ -79,7 +79,8 @@ router.get('/list/figure', function(req, res, next) {
     var promise = figures.find({_id: figureid}, {});
     promise.on('success', function(doc) {
         if (!doc.length) {
-            res.send('No figure');
+            res.location("/figures/list/figures");
+            res.redirect("/figures/list/figures");
             return;
         }
         var notes = req.db.get('notes');
@@ -234,7 +235,9 @@ router.get('/remove/note', function(req, res, next) {
     }
 
     var noteid = notes.id(req.query.id);
-    var figureid = figures.id(req.query.figureid);
+    var figureid;
+    if (req.query.hasOwnProperty('figureid'))
+        figureid = figures.id(req.query.figureid);
 
     var promise;
     if (!figureid) {
@@ -260,7 +263,15 @@ router.get('/remove/note', function(req, res, next) {
 
 router.get('/list/notes', function(req, res, next) {
     var notes = req.db.get('notes');
-    var promise = notes.find({},{});
+    var hassearch = req.query.hasOwnProperty('search');
+    var search = req.query.search;
+    var promise;
+    if (hassearch) {
+        var rx = new RegExp('.*' + search + '.*', 'i');
+        promise = notes.find({note: rx}, {});
+    } else {
+        promise = notes.find({}, {});
+    }
     promise.on('success', function(doc) {
         // get the figures
         var allnotes = doc;
@@ -269,9 +280,13 @@ router.get('/list/notes', function(req, res, next) {
         promise.on('success', function(doc) {
             var figmap = {};
             for (var i in doc) {
-                figmap[doc[i]._id] = doc[i];
+                figmap[doc[i]._id.str] = doc[i];
             }
-            res.render('listnotes', { notes: allnotes, figures: figmap });
+            if (hassearch) {
+                res.render('listnotespartial', { notes: allnotes, figures: figmap });
+            } else {
+                res.render('listnotes', { notes: allnotes, figures: figmap });
+            }
         });
     });
 });
