@@ -46,6 +46,35 @@ router.get('/import', function(req, res, next) {
     res.render('importmfc', { importuser: user });
 });
 
+router.get('/list/tags', function(req, res, next) {
+    var tags = Object.create(null);
+    var figures = req.db.get('figures');
+    var promise = figures.find({}, {});
+    promise.on('success', function(doc) {
+        for (var i in doc) {
+            var figure = doc[i];
+            for (var j in figure.tags) {
+                tags[figure.tags[j]] = true;
+            }
+        }
+        res.render('listtags', {tags: tags});
+    });
+});
+
+router.get('/list/tag', function(req, res, next) {
+    if (!req.query.hasOwnProperty('tags')) {
+        res.send('No tag');
+        return;
+    }
+    var tags = req.query.tags.split(' ');
+
+    var figures = req.db.get('figures');
+    var promise = figures.find({tags: {"$in": tags}},{});
+    promise.on('success', function(doc) {
+        res.render('listfigures', { figures: doc, figureSelected: {}, selector: false });
+    });
+});
+
 router.get('/list/figures', function(req, res, next) {
     var search = req.query.search;
     var db = req.db;
@@ -93,10 +122,10 @@ router.get('/list/figure', function(req, res, next) {
         if (figure.notes.length) {
             var promise = notes.find({_id: {"$in": figure.notes}});
             promise.on('success', function(doc) {
-                res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: doc });
+                res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: doc, tags: figure.tags || [] });
             });
         } else {
-            res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: [] });
+            res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: [], tags: figure.tags || [] });
         }
     });
 });
@@ -141,6 +170,52 @@ router.get('/remove/image', function(req, res, next) {
     promise.on('complete', function() {
         res.location("/figures/list/figure?id=" + figureid);
         res.redirect("/figures/list/figure?id=" + figureid);
+    });
+});
+
+router.post('/add/tag', function(req, res, next) {
+    if (!req.body.hasOwnProperty('figureid')) {
+        res.send('Invalid id');
+        return;
+    }
+    var figures = req.db.get('figures');
+    var id = figures.id(req.body.figureid);
+    var tag = req.body.tag;
+    if (typeof tag !== "string" || !tag.length) {
+        res.location("/figures/list/figure?id=" + id);
+        res.redirect("/figures/list/figure?id=" + id);
+        return;
+    }
+    var promise = figures.update({_id: id},
+                                 {"$push": {
+                                     tags: tag
+                                 }});
+    promise.on('success', function() {
+        res.location("/figures/list/figure?id=" + id);
+        res.redirect("/figures/list/figure?id=" + id);
+    });
+});
+
+router.get('/remove/tag', function(req, res, next) {
+    if (!req.query.hasOwnProperty('figureid')) {
+        res.send('Invalid id');
+        return;
+    }
+    var figures = req.db.get('figures');
+    var id = figures.id(req.query.figureid);
+    var tag = req.query.tag;
+    if (typeof tag !== "string" || !tag.length) {
+        res.location("/figures/list/figure?id=" + id);
+        res.redirect("/figures/list/figure?id=" + id);
+        return;
+    }
+    var promise = figures.update({_id: id},
+                                 {"$pull": {
+                                     tags: tag
+                                 }});
+    promise.on('success', function() {
+        res.location("/figures/list/figure?id=" + id);
+        res.redirect("/figures/list/figure?id=" + id);
     });
 });
 
@@ -221,7 +296,7 @@ router.all('/add/figure', function(req, res, next) {
     var name = req.body.name;
     if (name) {
         var figures = req.db.get('figures');
-        var promise = figures.insert({name: name, images: [], notes: []});
+        var promise = figures.insert({name: name, images: [], notes: [], tags: []});
         promise.on('success', function() {
             res.location("/figures/list/figures");
             res.redirect("/figures/list/figures");

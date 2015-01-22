@@ -64,7 +64,7 @@ importmfc.parseOwned = function(owned, db, username) {
 
         (function(id, genid) {
             figures.insert({
-                _id: genid, mfcid: id, name: name, released: released, price: price, images: [], notes: []
+                _id: genid, mfcid: id, name: name, released: released, price: price, images: [], notes: [], tags: []
             }, function(err, doc) {
                 if (err)
                     return;

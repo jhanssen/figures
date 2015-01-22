@@ -7,15 +7,32 @@ block content
   div
     a(href="/figures/list/figures") Back
   div
-    a(href="/figures/add/note?id=#{figure}") +note
+    form#formAddTag(name="tagform",method="post",action="/figures/add/tag")
+      input(type="text",placeholder="add tag",name="tag")
+      input(type="hidden",name="figureid",value="#{figure}")
     ul
       each note, i in notes
         li
           div !{note.note.replace(/\n/g, '<br/>')}
           a(href="/figures/remove/note?id=#{note._id}&figureid=#{figure}") -
+  div
+    a(href="/figures/add/tag?id=#{figure}") +note
+    ul
+      each tag, i in tags
+        li
+          div !{tag}
+          a(href="/figures/remove/tag?tag=#{tag}&figureid=#{figure}") -
+  div
     a(href="/figures/add/image?id=#{figure}") +image
     ul
       each item, i in images
         li
           img(src="/figures/list/image?id=#{item}")
           a(href="/figures/remove/image?id=#{item}&figureid=#{figure}") -
+
+  script.
+    var form = document.getElementById("formAddTag");
+    form.onkeypress = function(e) {
+      if (e.keyCode === 13)
+        form.submit();
+    };
