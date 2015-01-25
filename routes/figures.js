@@ -55,17 +55,18 @@ router.get('/list/figures', function(req, res, next) {
     var figures = db.get('figures');
     var uid = req.session.userid;
     var promise;
+    var opt = {sort: {name: 1}};
     if (search) {
         var rx = new RegExp('.*' + search + '.*', 'i');
         if (tags)
-            promise = figures.find({name: rx, uid: uid, tags: {"$all": tags}}, {});
+            promise = figures.find({name: rx, uid: uid, tags: {"$all": tags}}, opt);
         else
-            promise = figures.find({name: rx, uid: uid}, {});
+            promise = figures.find({name: rx, uid: uid}, opt);
     } else {
         if (tags)
-            promise = figures.find({uid: uid, tags: {"$all": tags}}, {});
+            promise = figures.find({uid: uid, tags: {"$all": tags}}, opt);
         else
-            promise = figures.find({uid: uid}, {});
+            promise = figures.find({uid: uid}, opt);
     }
     if (req.query.hasOwnProperty("search")) {
         var selector = req.query.hasOwnProperty("selector");
