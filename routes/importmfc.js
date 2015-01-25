@@ -48,7 +48,7 @@ importmfc.parsePictures = function(gallery, db, username, figureid)
                    }});
 };
 
-importmfc.parseOwned = function(owned, db, username) {
+importmfc.parseOwned = function(owned, db, username, userid) {
     var figures = db.get('figures');
     if (!(owned.item instanceof Array))
         owned.item = [owned.item];
@@ -76,7 +76,7 @@ importmfc.parseOwned = function(owned, db, username) {
 
                 (function(id, genid) {
                     figures.insert({
-                        _id: genid, mfcid: id, name: name, released: released, price: price, images: [], notes: [], tags: []
+                        _id: genid, mfcid: id, uid: userid, name: name, released: released, price: price, images: [], notes: [], tags: []
                     }, function(err, doc) {
                         if (err)
                             return;
@@ -132,7 +132,7 @@ importmfc.importmfc = function(req, user, page, pages) {
             var owned = obj.collection.owned;
             console.log("!parse collection page " + page);
             if (owned.item)
-                importmfc.parseOwned(owned, req.db, req.session.username);
+                importmfc.parseOwned(owned, req.db, req.session.username, req.session.userid);
             if (pages === undefined)
                 pages = parseInt(owned.num_pages);
             --pages;

@@ -22,7 +22,7 @@ router.get('/import', function(req, res, next) {
 router.get('/list/tags', function(req, res, next) {
     var tags = Object.create(null);
     var figures = req.db.get('figures');
-    var promise = figures.find({}, {});
+    var promise = figures.find({uid: req.session.userid}, {});
     promise.on('success', function(doc) {
         for (var i in doc) {
             var figure = doc[i];
@@ -42,7 +42,7 @@ router.get('/list/tag', function(req, res, next) {
     var tags = req.query.tags.split(',');
 
     var figures = req.db.get('figures');
-    var promise = figures.find({tags: {"$all": tags}},{});
+    var promise = figures.find({uid: req.session.userid, tags: {"$all": tags}},{});
     promise.on('success', function(doc) {
         res.render('listfigures', { figures: doc, figureSelected: {}, selector: false, tags: tags });
     });
@@ -53,18 +53,19 @@ router.get('/list/figures', function(req, res, next) {
     var tags = req.query.tags ? req.query.tags.split(',') : undefined;
     var db = req.db;
     var figures = db.get('figures');
+    var uid = req.session.userid;
     var promise;
     if (search) {
         var rx = new RegExp('.*' + search + '.*', 'i');
         if (tags)
-            promise = figures.find({name: rx, tags: {"$all": tags}}, {});
+            promise = figures.find({name: rx, uid: uid, tags: {"$all": tags}}, {});
         else
-            promise = figures.find({name: rx}, {});
+            promise = figures.find({name: rx, uid: uid}, {});
     } else {
         if (tags)
-            promise = figures.find({tags: {"$all": tags}}, {});
+            promise = figures.find({uid: uid, tags: {"$all": tags}}, {});
         else
-            promise = figures.find({}, {});
+            promise = figures.find({uid: uid}, {});
     }
     if (req.query.hasOwnProperty("search")) {
         var selector = req.query.hasOwnProperty("selector");
@@ -89,7 +90,7 @@ router.get('/list/figure', function(req, res, next) {
         return;
     }
     var figureid = figures.id(req.query.id);
-    var promise = figures.find({_id: figureid}, {});
+    var promise = figures.find({uid: req.session.userid, _id: figureid}, {});
     promise.on('success', function(doc) {
         if (!doc.length) {
             res.location("/figures/list/figures");
@@ -240,7 +241,7 @@ router.all('/add/note', function(req, res, next) {
     if (note) {
         var notes = req.db.get('notes');
         var noteid = notes.id();
-        var promise = notes.insert({_id: noteid, note: note, figures: [id]});
+        var promise = notes.insert({_id: noteid, uid: req.session.userid, note: note, figures: [id]});
         promise.on('success', function() {
             promise = figures.update({_id: id},
                                       {"$push": {
@@ -260,7 +261,7 @@ router.all('/add/box', function(req, res, next) {
     var box = req.body.box;
     if (box) {
         var boxes = req.db.get('boxes');
-        var promise = boxes.insert({box: box, figures: []});
+        var promise = boxes.insert({box: box, uid: req.session.userid, figures: []});
         promise.on('success', function() {
             promise.on('success', function() {
                 res.location("/figures/list/boxes");
@@ -276,7 +277,7 @@ router.all('/add/figure', function(req, res, next) {
     var name = req.body.name;
     if (name) {
         var figures = req.db.get('figures');
-        var promise = figures.insert({name: name, images: [], notes: [], tags: []});
+        var promise = figures.insert({name: name, uid: req.session.userid, images: [], notes: [], tags: []});
         promise.on('success', function() {
             res.location("/figures/list/figures");
             res.redirect("/figures/list/figures");
@@ -367,7 +368,7 @@ router.all('/add/notefigure', function(req, res, next) {
             });
         });
     } else {
-      promise = figures.find({}, {});
+      promise = figures.find({uid: req.session.userid}, {});
       promise.on('success', function(doc) {
           res.render('figureselector', { figures: doc, selector: true, id: id, path: '/figures/add/notefigure', figureSelected: {} });
       });
@@ -400,7 +401,7 @@ router.all('/add/boxfigure', function(req, res, next) {
             });
         });
     } else {
-        promise = figures.find({}, {});
+        promise = figures.find({uid: req.session.userid}, {});
         promise.on('success', function(doc) {
             res.render('figureselector', { figures: doc, selector: true, id: id, path: '/figures/add/boxfigure', figureSelected: {} });
         });
@@ -444,15 +445,15 @@ router.get('/list/notes', function(req, res, next) {
     var promise;
     if (hassearch) {
         var rx = new RegExp('.*' + search + '.*', 'i');
-        promise = notes.find({note: rx}, {});
+        promise = notes.find({uid: req.session.userid, note: rx}, {});
     } else {
-        promise = notes.find({}, {});
+        promise = notes.find({uid: req.session.userid}, {});
     }
     promise.on('success', function(doc) {
         // get the figures
         var allnotes = doc;
         var figures = req.db.get('figures');
-        promise = figures.find({},{});
+        promise = figures.find({uid: req.session.userid},{});
         promise.on('success', function(doc) {
             var figmap = {};
             for (var i in doc) {
@@ -470,12 +471,12 @@ router.get('/list/notes', function(req, res, next) {
 
 router.get('/list/boxes', function(req, res, next) {
     var boxes = req.db.get('boxes');
-    var promise = boxes.find({}, {});
+    var promise = boxes.find({uid: req.session.userid}, {});
     promise.on('success', function(doc) {
         // get the figures
         var allboxes = doc;
         var figures = req.db.get('figures');
-        promise = figures.find({},{});
+        promise = figures.find({uid: req.session.userid},{});
         promise.on('success', function(doc) {
             var figmap = {};
             for (var i in doc) {

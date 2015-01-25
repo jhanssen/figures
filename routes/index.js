@@ -35,6 +35,8 @@ router.post('/login', function(req, res, next) {
                     return;
                 }
                 session.username = username;
+                session.userid = doc[0]._id;
+                console.log("logged in as " + session.userid);
                 res.location("/figures/");
                 res.redirect("/figures/");
             });
@@ -90,6 +92,11 @@ router.post('/adduser', function(req, res, next) {
             });
         });
     });
+
+    // create the appropriate indexes
+    db.get('figures').ensureIndex({uid: 1});
+    db.get('tags').ensureIndex({uid: 1});
+    db.get('boxes').ensureIndex({uid: 1});
 });
 
 module.exports = router;
