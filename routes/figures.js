@@ -71,20 +71,27 @@ router.get('/list/tag', function(req, res, next) {
     var figures = req.db.get('figures');
     var promise = figures.find({tags: {"$in": tags}},{});
     promise.on('success', function(doc) {
-        res.render('listfigures', { figures: doc, figureSelected: {}, selector: false });
+        res.render('listfigures', { figures: doc, figureSelected: {}, selector: false, tags: tags });
     });
 });
 
 router.get('/list/figures', function(req, res, next) {
     var search = req.query.search;
+    var tags = req.query.tags ? req.query.tags.split(' ') : undefined;
     var db = req.db;
     var figures = db.get('figures');
     var promise;
     if (search) {
         var rx = new RegExp('.*' + search + '.*', 'i');
-        promise = figures.find({name: rx}, {});
+        if (tags)
+            promise = figures.find({name: rx, tags: {"$in": tags}}, {});
+        else
+            promise = figures.find({name: rx}, {});
     } else {
-        promise = figures.find({}, {});
+        if (tags)
+            promise = figures.find({tags: {"$in": tags}}, {});
+        else
+            promise = figures.find({}, {});
     }
     if (req.query.hasOwnProperty("search")) {
         var selector = req.query.hasOwnProperty("selector");
@@ -93,11 +100,11 @@ router.get('/list/figures', function(req, res, next) {
             selected = JSON.parse(req.query.selected);
         }
         promise.on('success', function(doc) {
-            res.render('listfigurespartial', { figures: doc, figureSelected: selected, selector: selector });
+            res.render('listfigurespartial', { figures: doc, figureSelected: selected, selector: selector, tags: [] });
         });
     } else {
         promise.on('success', function(doc) {
-            res.render('listfigures', { figures: doc, figureSelected: {}, selector: false });
+            res.render('listfigures', { figures: doc, figureSelected: {}, selector: false, tags: [] });
         });
     }
 });

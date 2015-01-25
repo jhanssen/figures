@@ -4,6 +4,7 @@ ul(id="results")
 script.
   var selector = !{selector};
   var selected = !{JSON.stringify(figureSelected)};
+  var tags = !{"\"" + tags.join(" ") + "\""};
 
   var input = document.getElementById("inputSearch");
   input.onkeyup = function(e) {
@@ -15,6 +16,8 @@ script.
       }
     };
     var q = '/figures/list/figures?search=' + input.value;
+    if (tags.length > 0)
+      q += "&tags=" + tags;
     if (selector) {
       // toggle things
       var inputs = document.getElementsByTagName('input');
