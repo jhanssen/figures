@@ -55,52 +55,93 @@ importmfc.parseOwned = function(owned, db, username) {
     for (var i in owned.item) {
         var item = owned.item[i];
         var id = parseInt(item.data.id);
-        var genid = figures.id();
-        console.log("!  parse item " + id);
-        var name = item.data.name;
-        var released = item.data.release_date;
-        var price = item.data.price;
-        // get the pictures
-
-        (function(id, genid) {
-            figures.insert({
-                _id: genid, mfcid: id, name: name, released: released, price: price, images: [], notes: [], tags: []
-            }, function(err, doc) {
-                if (err)
+        // check if this id is in the db
+        (function(item, id) {
+            var promise = figures.find({mfcid: id}, {});
+            promise.on('success', function(doc) {
+                if (!(doc instanceof Array)) {
+                    console.log("doc not instanceof array: " + JSON.stringify(doc));
                     return;
-                var gallery = function(genid, page, pages) {
-                    http.get({
-                        hostname: 'myfigurecollection.net',
-                        port: 80,
-                        path: '/api.php?mode=gallery&type=json&item=' + id + '&page=' + page
-                    }, function(res) {
-                        var data = "";
-                        res.on('data', function(chunk) {
-                            data += chunk;
-                        });
-                        res.on('end', function() {
-                            var json = JSON.parse(data).gallery;
-                            // find all the official images
-                            console.log("!    parse pictures page for " + id + " page " + page + ", remaining " + pages);
-                            if (json.picture) {
-                                if (!(json.picture instanceof Array))
-                                    json.picture = [json.picture];
-                                importmfc.parsePictures(json, db, username, genid);
-                            }
-                            if (pages === undefined)
-                                pages = parseInt(json.num_pages);
-                            --pages;
-                            if (pages > 0) {
-                                ++page;
-                                gallery(genid, page, pages);
-                            }
-                        });
+                }
+                if (doc.length > 0) {
+                    console.log("already got mfcid " + id);
+                    return;
+                }
+                var genid = figures.id();
+                console.log("!  parse item " + id);
+                var name = item.data.name;
+                var released = item.data.release_date;
+                var price = item.data.price;
+                // get the pictures
+
+                (function(id, genid) {
+                    figures.insert({
+                        _id: genid, mfcid: id, name: name, released: released, price: price, images: [], notes: [], tags: []
+                    }, function(err, doc) {
+                        if (err)
+                            return;
+                        var gallery = function(genid, page, pages) {
+                            http.get({
+                                hostname: 'myfigurecollection.net',
+                                port: 80,
+                                path: '/api.php?mode=gallery&type=json&item=' + id + '&page=' + page
+                            }, function(res) {
+                                var data = "";
+                                res.on('data', function(chunk) {
+                                    data += chunk;
+                                });
+                                res.on('end', function() {
+                                    var json = JSON.parse(data).gallery;
+                                    // find all the official images
+                                    console.log("!    parse pictures page for " + id + " page " + page + ", remaining " + pages);
+                                    if (json.picture) {
+                                        if (!(json.picture instanceof Array))
+                                            json.picture = [json.picture];
+                                        importmfc.parsePictures(json, db, username, genid);
+                                    }
+                                    if (pages === undefined)
+                                        pages = parseInt(json.num_pages);
+                                    --pages;
+                                    if (pages > 0) {
+                                        ++page;
+                                        gallery(genid, page, pages);
+                                    }
+                                });
+                            });
+                        };
+                        gallery(genid, 1);
                     });
-                };
-                gallery(genid, 1);
+                })(id, genid);
             });
-        })(id, genid);
+        })(item, id);
     }
+};
+
+importmfc.importmfc = function(req, user, page, pages) {
+    http.get({
+        hostname: 'myfigurecollection.net',
+        port: 80,
+        path: '/api.php?mode=collection&type=json&username=' + user + '&status=2&page=' + page
+    }, function(res) {
+        var data = "";
+        res.on('data', function(chunk) {
+            data += chunk;
+        });
+        res.on('end', function() {
+            var obj = JSON.parse(data);
+            var owned = obj.collection.owned;
+            console.log("!parse collection page " + page);
+            if (owned.item)
+                importmfc.parseOwned(owned, req.db, req.session.username);
+            if (pages === undefined)
+                pages = parseInt(owned.num_pages);
+            --pages;
+            if (pages > 0) {
+                ++page;
+                importmfc.importmfc(req, user, page, pages);
+            }
+        });
+    });
 };
 
 module.exports = importmfc;

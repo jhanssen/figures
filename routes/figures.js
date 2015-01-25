@@ -13,34 +13,7 @@ router.get('/', function(req, res, next) {
 router.get('/import', function(req, res, next) {
     var user = req.query.importuser;
     if (user) {
-        // do an MFC API query for user
-        var mfc = function(page, pages) {
-            http.get({
-                hostname: 'myfigurecollection.net',
-                port: 80,
-                path: '/api.php?mode=collection&type=json&username=' + user + '&status=2&page=' + page
-            }, function(res) {
-                var data = "";
-                res.on('data', function(chunk) {
-                    data += chunk;
-                });
-                res.on('end', function() {
-                    var obj = JSON.parse(data);
-                    var owned = obj.collection.owned;
-                    console.log("!parse collection page " + page);
-                    if (owned.item)
-                        importmfc.parseOwned(owned, req.db, req.session.username);
-                    if (pages === undefined)
-                        pages = parseInt(owned.num_pages);
-                    --pages;
-                    if (pages > 0) {
-                        ++page;
-                        mfc(page, pages);
-                    }
-                });
-            });
-        };
-        mfc(1);
+        importmfc.importmfc(req, user, 1);
     }
 
     res.render('importmfc', { importuser: user });
