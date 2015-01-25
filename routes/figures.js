@@ -66,10 +66,10 @@ router.get('/list/tag', function(req, res, next) {
         res.send('No tag');
         return;
     }
-    var tags = req.query.tags.split(' ');
+    var tags = req.query.tags.split(',');
 
     var figures = req.db.get('figures');
-    var promise = figures.find({tags: {"$in": tags}},{});
+    var promise = figures.find({tags: {"$all": tags}},{});
     promise.on('success', function(doc) {
         res.render('listfigures', { figures: doc, figureSelected: {}, selector: false, tags: tags });
     });
@@ -77,19 +77,19 @@ router.get('/list/tag', function(req, res, next) {
 
 router.get('/list/figures', function(req, res, next) {
     var search = req.query.search;
-    var tags = req.query.tags ? req.query.tags.split(' ') : undefined;
+    var tags = req.query.tags ? req.query.tags.split(',') : undefined;
     var db = req.db;
     var figures = db.get('figures');
     var promise;
     if (search) {
         var rx = new RegExp('.*' + search + '.*', 'i');
         if (tags)
-            promise = figures.find({name: rx, tags: {"$in": tags}}, {});
+            promise = figures.find({name: rx, tags: {"$all": tags}}, {});
         else
             promise = figures.find({name: rx}, {});
     } else {
         if (tags)
-            promise = figures.find({tags: {"$in": tags}}, {});
+            promise = figures.find({tags: {"$all": tags}}, {});
         else
             promise = figures.find({}, {});
     }

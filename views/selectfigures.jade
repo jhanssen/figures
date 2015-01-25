@@ -4,7 +4,7 @@ ul(id="results")
 script.
   var selector = !{selector};
   var selected = !{JSON.stringify(figureSelected)};
-  var tags = !{"\"" + tags.join(" ") + "\""};
+  var tags = !{"\"" + tags.join(',') + "\""};
 
   var input = document.getElementById("inputSearch");
   input.onkeyup = function(e) {
