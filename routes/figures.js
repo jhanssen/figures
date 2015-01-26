@@ -371,7 +371,7 @@ router.all('/add/notefigure', function(req, res, next) {
     } else {
       promise = figures.find({uid: req.session.userid}, {});
       promise.on('success', function(doc) {
-          res.render('figureselector', { figures: doc, selector: true, id: id, path: '/figures/add/notefigure', figureSelected: {} });
+          res.render('figureselector', { figures: doc, selector: true, id: id, path: '/figures/add/notefigure', figureSelected: {}, tags: [] });
       });
     }
 });
@@ -404,7 +404,7 @@ router.all('/add/boxfigure', function(req, res, next) {
     } else {
         promise = figures.find({uid: req.session.userid}, {});
         promise.on('success', function(doc) {
-            res.render('figureselector', { figures: doc, selector: true, id: id, path: '/figures/add/boxfigure', figureSelected: {} });
+            res.render('figureselector', { figures: doc, selector: true, id: id, path: '/figures/add/boxfigure', figureSelected: {}, tags: [] });
         });
     }
 });
