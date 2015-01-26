@@ -7,16 +7,16 @@ block content
   div
     a(href="/figures/list/figures") Back
   div
-    form#formAddTag(name="tagform",method="post",action="/figures/add/tag")
-      input(type="text",placeholder="add tag",name="tag")
-      input(type="hidden",name="figureid",value="#{figure}")
+    a(href="/figures/add/note?id=#{figure}") +note
     ul
       each note, i in notes
         li
           div !{note.note.replace(/\n/g, '<br/>')}
           a(href="/figures/remove/note?id=#{note._id}&figureid=#{figure}") -
   div
-    a(href="/figures/add/tag?id=#{figure}") +note
+    form#formAddTag(name="tagform",method="post",action="/figures/add/tag")
+      input(type="text",placeholder="add tag",name="tag")
+      input(type="hidden",name="figureid",value="#{figure}")
     ul
       each tag, i in tags
         li
