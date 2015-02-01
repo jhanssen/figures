@@ -4,8 +4,8 @@ ul(id="results")
 script.
   function showImage(imageId) {
     var div = document.getElementById('firstImage');
-    div.innerHTML = "<img src='/figures/list/firstimage?id=" + imageId + "'></img>";
     div.style.visibility = 'visible';
+    div.innerHTML = "<img src='/figures/list/firstimage?id=" + imageId + "' style='display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; right: 0px; bottom: 0px; position: absolute'></img>";
   }
   function hideImage() {
     var div = document.getElementById('firstImage');
