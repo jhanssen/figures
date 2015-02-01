@@ -2,6 +2,16 @@ ul(id="results")
   include ./listfigurespartial.jade
 
 script.
+  function showImage(imageId) {
+    var div = document.getElementById('firstImage');
+    div.innerHTML = "<img src='/figures/list/firstimage?id=" + imageId + "'></img>";
+    div.style.visibility = 'visible';
+  }
+  function hideImage() {
+    var div = document.getElementById('firstImage');
+    div.style.visibility = 'hidden';
+  }
+
   var selector = !{selector};
   var selected = !{JSON.stringify(figureSelected)};
   var tags = !{"\"" + tags.join(',') + "\""};

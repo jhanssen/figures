@@ -3,8 +3,9 @@ each item, i in figures
     if selector
       input(id="#{item._id}",type="checkbox",checked=figureSelected[item._id],name="check",value="#{item._id}")
       = ' '
-      = item.name
+      span(onmouseenter="showImage('#{item._id}')",onmouseleave="hideImage()")
+        = item.name
     else
-      a(href="/figures/list/figure?id=#{item._id}")= item.name
+      a(href="/figures/list/figure?id=#{item._id}",onmouseenter="showImage('#{item._id}')",onmouseleave="hideImage()")= item.name
       = ' '
       a(href="/figures/remove/figure?id=#{item._id}") -

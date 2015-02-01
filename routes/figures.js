@@ -112,6 +112,40 @@ router.get('/list/figure', function(req, res, next) {
     });
 });
 
+router.get('/list/firstimage', function(req, res, next) {
+    if (!req.query.hasOwnProperty('id')) {
+        res.send('Invalid id');
+        return;
+    }
+    var figures = req.db.get('figures');
+    var figureid = figures.id(req.query.id);
+    var promise = figures.find({uid: req.session.userid, _id: figureid}, {});
+    promise.on('success', function(doc) {
+        if (!doc.length) {
+            res.send('figureimage error, id?');
+            return;
+        }
+        var figure = doc[0];
+        if (!figure.images.length) {
+            res.send('No image');
+            return;
+        }
+        var images = req.db.get('images');
+        promise = images.find({_id: figure.images[0]}, {});
+        promise.on('success', function(doc) {
+            if (!doc.length) {
+                res.send('No data');
+                return;
+            }
+            res.setHeader('content-type', 'image/jpeg');
+            if (typeof doc[0].data === 'object' && doc[0].data.buffer)
+                res.end(doc[0].data.buffer, 'binary');
+            else
+                res.end(doc[0].data, 'binary');
+        });
+    });
+});
+
 router.get('/list/image', function(req, res, next) {
     var images = req.db.get('images');
     if (!req.query.hasOwnProperty('id')) {
