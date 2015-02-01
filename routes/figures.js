@@ -104,10 +104,10 @@ router.get('/list/figure', function(req, res, next) {
         if (figure.notes.length) {
             var promise = notes.find({_id: {"$in": figure.notes}});
             promise.on('success', function(doc) {
-                res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: doc, tags: figure.tags || [] });
+                res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: doc, tags: figure.tags || [], mfcid: figure.mfcid });
             });
         } else {
-            res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: [], tags: figure.tags || [] });
+            res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: [], tags: figure.tags || [], mfcid: figure.mfcid });
         }
     });
 });

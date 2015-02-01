@@ -30,6 +30,9 @@ block content
           img(src="/figures/list/image?id=#{item}")
           a(href="/figures/remove/image?id=#{item}&figureid=#{figure}") -
 
+  if mfcid
+    a(href='http://myfigurecollection.net/item/#{mfcid}') mfc
+
   script.
     var form = document.getElementById("formAddTag");
     form.onkeypress = function(e) {
