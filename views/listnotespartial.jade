@@ -6,4 +6,4 @@ each item, i in notes
     ul
       each fig, i in item.figures
         li
-          a(href="/figures/list/figure?id=#{fig.toHexString()}") !{figures[fig.toHexString()].name}
+          a(href="/figures/list/figure?id=#{fig.toHexString()}" onmouseenter="showImage('#{fig.toHexString()}')" onmouseleave="hideImage()") !{figures[fig.toHexString()].name}
