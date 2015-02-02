@@ -112,6 +112,62 @@ router.get('/list/figure', function(req, res, next) {
     });
 });
 
+router.get('/mod/figureimage', function(req, res, next) {
+    if (!req.query.hasOwnProperty('id')
+        || !req.query.hasOwnProperty('from')
+        || !req.query.hasOwnProperty('to')) {
+        res.send('Invalid id');
+        return;
+    }
+    var figures = req.db.get('figures');
+    var figureid = figures.id(req.query.id);
+    var promise = figures.find({uid: req.session.userid, _id: figureid}, {});
+    promise.on('success', function(doc) {
+        var figure = doc[0];
+        if (!figure.images.length) {
+            res.send('No image');
+            return;
+        }
+
+        var images = req.db.get('images');
+        var fromid = images.id(req.query.from);
+        var toid = images.id(req.query.to);
+
+        var fromidx = -1, toidx = -1;
+        var imagelist = figure.images;
+        for (var i in imagelist) {
+            var curimg = imagelist[i];
+            if (curimg.equals(fromid)) {
+                fromidx = i;
+            }
+            if (curimg.equals(toid)) {
+                toidx = i;
+            }
+        }
+        if (fromidx != -1 && toidx != -1) {
+          if (fromidx < toidx) {
+            // first remove to
+            imagelist.splice(toidx, 1);
+            // remove from, insert to
+            imagelist.splice(fromidx, 1, toid);
+            // insert from at to
+            imagelist.splice(toidx, 0, fromid);
+          } else {
+            // first remove from
+            imagelist.splice(fromidx, 1);
+            // remove to, insert from
+            imagelist.splice(toidx, 1, fromid);
+            // insert to at from
+            imagelist.splice(fromidx, 0, toid);
+          }
+
+          figures.update({_id: figureid}, {"$set": {images: imagelist}});
+        }
+        res.location("/figures/list/figure?id=" + figureid);
+        res.redirect("/figures/list/figure?id=" + figureid);
+    });
+});
+
 router.get('/list/firstimage', function(req, res, next) {
     if (!req.query.hasOwnProperty('id')) {
         res.send('Invalid id');
