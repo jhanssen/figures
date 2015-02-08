@@ -8,4 +8,4 @@ each item, i in figures
     else
       a(href="/figures/list/figure?id=#{item._id}",onmouseenter="showImage('#{item._id}')",onmouseleave="hideImage()")= item.name
       = ' '
-      a(href="/figures/remove/figure?id=#{item._id}") -
+      a(href="javascript:if (window.confirm('Really remove?')) window.location.assign('/figures/remove/figure?id=#{item._id}')") -
