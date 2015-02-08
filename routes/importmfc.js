@@ -91,7 +91,12 @@ importmfc.parseOwned = function(owned, db, username, userid) {
                                     data += chunk;
                                 });
                                 res.on('end', function() {
-                                    var json = JSON.parse(data).gallery;
+                                    try {
+                                        var json = JSON.parse(data).gallery;
+                                    } catch (e) {
+                                        console.log("Couldn't parse gallery for item " + id + " and page " + page);
+                                        return;
+                                    }
                                     // find all the official images
                                     console.log("!    parse pictures page for " + id + " page " + page + ", remaining " + pages);
                                     if (json.picture) {
@@ -128,7 +133,12 @@ importmfc.importmfc = function(req, user, page, pages) {
             data += chunk;
         });
         res.on('end', function() {
-            var obj = JSON.parse(data);
+            try {
+                var obj = JSON.parse(data);
+            } catch (e) {
+                console.log("Couldn't parse response for user " + user);
+                return;
+            }
             var owned = obj.collection.owned;
             console.log("!parse collection page " + page);
             if (owned.item)
