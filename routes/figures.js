@@ -90,24 +90,33 @@ router.get('/list/figure', function(req, res, next) {
         res.send('Invalid id');
         return;
     }
+    var figure, box;
     var figureid = figures.id(req.query.id);
     var promise = figures.find({uid: req.session.userid, _id: figureid}, {});
-    promise.on('success', function(doc) {
+    promise.then(function(doc) {
         if (!doc.length) {
-            res.location("/figures/list/figures");
-            res.redirect("/figures/list/figures");
-            return;
+            throw "/figures/list/figures";
         }
-        var notes = req.db.get('notes');
-        var figure = doc[0];
-
+        figure = doc[0];
+        // do the box lookup
+        var boxes = req.db.get('boxes');
+        return boxes.find({figures: {"$in": [figure._id]}},{});
+    }).then(function(doc) {
+        if (doc.length)
+            box = doc[0];
         if (figure.notes.length) {
-            var promise = notes.find({_id: {"$in": figure.notes}});
-            promise.on('success', function(doc) {
-                res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: doc, tags: figure.tags || [], mfcid: figure.mfcid });
+            var notes = req.db.get('notes');
+            return notes.find({_id: {"$in": figure.notes}}).then(function(doc) {
+                res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: doc, tags: figure.tags || [], mfcid: figure.mfcid, box: box });
             });
         } else {
-            res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: [], tags: figure.tags || [], mfcid: figure.mfcid });
+            res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: [], tags: figure.tags || [], mfcid: figure.mfcid, box: box });
+            return undefined;
+        }
+    }).end(function(err) {
+        if (typeof err === "string") {
+            res.location(err);
+            res.redirect(err);
         }
     });
 });
@@ -173,32 +182,34 @@ router.get('/list/firstimage', function(req, res, next) {
         res.send('Invalid id');
         return;
     }
+    var figure;
     var figures = req.db.get('figures');
     var figureid = figures.id(req.query.id);
     var promise = figures.find({uid: req.session.userid, _id: figureid}, {});
-    promise.on('success', function(doc) {
+    promise.then(function(doc) {
         if (!doc.length) {
-            res.send('figureimage error, id?');
-            return;
+            throw 'figureimage error, id?';
         }
-        var figure = doc[0];
+        figure = doc[0];
         if (!figure.images.length) {
-            res.send('No image');
-            return;
+            throw 'no image';
         }
         var images = req.db.get('images');
-        promise = images.find({_id: figure.images[0]}, {});
-        promise.on('success', function(doc) {
-            if (!doc.length) {
-                res.send('No data');
-                return;
-            }
-            res.setHeader('content-type', 'image/jpeg');
-            if (typeof doc[0].data === 'object' && doc[0].data.buffer)
-                res.end(doc[0].data.buffer, 'binary');
-            else
-                res.end(doc[0].data, 'binary');
-        });
+        return images.find({_id: figure.images[0]}, {});
+    }).then(function(doc) {
+        if (!doc.length) {
+            res.send('No data');
+            return;
+        }
+        res.setHeader('content-type', 'image/jpeg');
+        if (typeof doc[0].data === 'object' && doc[0].data.buffer)
+            res.end(doc[0].data.buffer, 'binary');
+        else
+            res.end(doc[0].data, 'binary');
+    }).end(function(err) {
+        if (typeof err === "string") {
+            res.send(err);
+        }
     });
 });
 

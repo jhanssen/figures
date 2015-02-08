@@ -6,6 +6,8 @@ block content
 
   div
     a(href="/figures/list/figures") Back
+  if box
+    div In box #{box.box}
   div
     a(href="/figures/add/note?id=#{figure}") +note
     ul
@@ -24,6 +26,7 @@ block content
           a(href="javascript:if (window.confirm('Really remove?')) window.location.assign('/figures/remove/tag?tag=#{tag}&figureid=#{figure}')") -
   div#images
     a(href="/figures/add/image?id=#{figure}") +image
+    ul
       each item, i in images
         li
           img(src="/figures/list/image?id=#{item}")
