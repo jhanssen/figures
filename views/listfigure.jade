@@ -22,8 +22,10 @@ block content
     ul
       each tag, i in tags
         li
-          div !{tag}
-          a(href="javascript:if (window.confirm('Really remove?')) window.location.assign('/figures/remove/tag?tag=#{tag}&figureid=#{figure}')") -
+          div
+            a(href="/figures/list/tag?tags=#{tag}") !{tag}
+            = " "
+            a(href="javascript:if (window.confirm('Really remove?')) window.location.assign('/figures/remove/tag?tag=#{tag}&figureid=#{figure}')") -
   div#images
     a(href="/figures/add/image?id=#{figure}") +image
     ul
