@@ -14,7 +14,8 @@ block content
       each note, i in notes
         li
           div !{note.note.replace(/\n/g, '<br/>')}
-          a(href="javascript:if (window.confirm('Really remove?')) window.location.assign('/figures/remove/note?id=#{note._id}&figureid=#{figure}')") -
+            = " "
+            a(href="javascript:if (window.confirm('Really remove?')) window.location.assign('/figures/remove/note?id=#{note._id}&figureid=#{figure}')") -
   div
     form#formAddTag(name="tagform",method="post",action="/figures/add/tag")
       input(type="text",placeholder="add tag",name="tag")
