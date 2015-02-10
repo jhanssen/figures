@@ -97,6 +97,8 @@ router.post('/adduser', function(req, res, next) {
     db.get('figures').ensureIndex({uid: 1});
     db.get('tags').ensureIndex({uid: 1});
     db.get('boxes').ensureIndex({uid: 1});
+    db.get('links').ensureIndex({from: 1});
+    db.get('links').ensureIndex({to: 1});
 });
 
 module.exports = router;

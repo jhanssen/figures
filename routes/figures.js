@@ -3,6 +3,7 @@ var router = express.Router();
 var http = require('http');
 var url = require('url');
 var importmfc = require('./importmfc');
+var MPromise = require('mpromise');
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
@@ -90,7 +91,7 @@ router.get('/list/figure', function(req, res, next) {
         res.send('Invalid id');
         return;
     }
-    var figure, box;
+    var figure, box, linknames;
     var figureid = figures.id(req.query.id);
     var promise = figures.find({uid: req.session.userid, _id: figureid}, {});
     promise.then(function(doc) {
@@ -104,13 +105,34 @@ router.get('/list/figure', function(req, res, next) {
     }).then(function(doc) {
         if (doc.length)
             box = doc[0];
+        var links = req.db.get('links');
+        return links.find({"$or": [{from: figureid}, {to: figureid}]});
+    }).then(function(doc) {
+        if (!doc.length) {
+            // fake success
+            var promise = new MPromise();
+            promise.fulfill([]);
+            return promise;
+        }
+        var objs = [];
+        for (var i in doc) {
+            if (!doc[i].from.equals(figureid)) {
+                objs.push({_id: doc[i].from});
+            } else {
+                objs.push({_id: doc[i].to});
+            }
+        }
+        return figures.find({"$or": objs});
+    }).then(function(doc) {
+        if (doc.length)
+            linknames = doc;
         if (figure.notes.length) {
             var notes = req.db.get('notes');
             return notes.find({_id: {"$in": figure.notes}}).then(function(doc) {
-                res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: doc, tags: figure.tags || [], mfcid: figure.mfcid, box: box });
+                res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: doc, tags: figure.tags || [], mfcid: figure.mfcid, box: box, links: linknames });
             });
         } else {
-            res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: [], tags: figure.tags || [], mfcid: figure.mfcid, box: box });
+            res.render('listfigure', { name: figure.name, images: figure.images || [], figure: figure._id, notes: [], tags: figure.tags || [], mfcid: figure.mfcid, box: box, links: linknames });
             return undefined;
         }
     }).end(function(err) {
@@ -477,6 +499,35 @@ router.all('/add/notefigure', function(req, res, next) {
     }
 });
 
+router.all('/add/linkfigure', function(req, res, next) {
+    var figures = req.db.get('figures');
+    var links = req.db.get('links');
+    if (!req.query.hasOwnProperty('id') && !req.body.hasOwnProperty('id')) {
+        res.send('Invalid id');
+        return;
+    }
+    var promise;
+    var from = figures.id(req.query.id || req.body.id);
+    var check = req.body.check;
+    if (typeof check === "string")
+        check = [check];
+    if (check && check instanceof Array) {
+        var figids = [];
+        for (var i in check) {
+            promise = links.insert({from: from, to: figures.id(check[i])});
+        }
+        promise.on('success', function() {
+            res.location("/figures/list/figure?id=" + from);
+            res.redirect("/figures/list/figure?id=" + from);
+        });
+    } else {
+        promise = figures.find({uid: req.session.userid}, {});
+        promise.on('success', function(doc) {
+            res.render('figureselector', { figures: doc, selector: true, id: from, path: '/figures/add/linkfigure', figureSelected: {}, tags: [] });
+        });
+    }
+});
+
 router.all('/add/boxfigure', function(req, res, next) {
     var figures = req.db.get('figures');
     var boxes = req.db.get('boxes');
@@ -508,6 +559,26 @@ router.all('/add/boxfigure', function(req, res, next) {
             res.render('figureselector', { figures: doc, selector: true, id: id, path: '/figures/add/boxfigure', figureSelected: {}, tags: [] });
         });
     }
+});
+
+router.get('/remove/linkfigure', function(req, res, next) {
+    var figures = req.db.get('figures');
+    if (!req.query.hasOwnProperty('id')
+        || !req.query.hasOwnProperty('other')) {
+        res.send('Invalid id');
+        return;
+    }
+    var id = figures.id(req.query.id);
+    var other = figures.id(req.query.other);
+    var promise;
+    var links = req.db.get('links');
+    promise = links.remove({from: id, to: other});
+    promise.then(function(doc) {
+        return links.remove({from: other, to: id});
+    }).then(function(doc) {
+        res.location("/figures/list/figure?id=" + id);
+        res.redirect("/figures/list/figure?id=" + id);
+    });
 });
 
 router.get('/remove/box', function(req, res, next) {

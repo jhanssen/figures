@@ -17,6 +17,7 @@
     "mongodb": "*",
     "monk": "*",
     "bcrypt": "*",
-    "multer": "*"
+    "multer": "*",
+    "mpromise": "*"
   }
 }
