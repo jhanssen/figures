@@ -27,7 +27,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({ secret: 'figures', resave: false, saveUninitialized: true }));
-app.use(multer({ inMemory: true }));
+//app.use(multer({ inMemory: true }));
+app.use(multer({ inMemory: true }).single('path'));
 
 app.use(function(req, res, next) {
     req.db = db;

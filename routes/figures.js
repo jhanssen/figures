@@ -326,13 +326,13 @@ router.get('/remove/tag', function(req, res, next) {
 
 router.all('/add/image', function(req, res, next) {
     var figures = req.db.get('figures');
-    if (!req.query.hasOwnProperty('id') && !req.body.hasOwnProperty('id')) {
+    if (!('id' in req.query) && !('id' in req.body)) {
         res.send('Invalid id');
         return;
     }
     var id = figures.id(req.query.id || req.body.id);
 
-    var path = req.files && req.files.path;
+    var path = req.file;
     if (path) {
         var images = req.db.get('images');
         var imgid = images.id();
