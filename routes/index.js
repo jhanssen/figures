@@ -21,10 +21,7 @@ router.post('/login', function(req, res, next) {
 
     var users = db.get('users');
     var promise = users.find({ username: username }, {});
-    promise.on('error', function(err) {
-        res.send('Error selecting user');
-    });
-    promise.on('success', function(doc) {
+    var success = function(doc) {
         if (doc.length > 1) {
             res.send('Internal error');
         } else {
@@ -41,6 +38,18 @@ router.post('/login', function(req, res, next) {
                 res.redirect("/figures/");
             });
         }
+    };
+    promise.on('error', function(err) {
+        res.send('Error selecting user');
+    });
+    promise.on('complete', function(err, doc) {
+        if (!err)
+            success(doc);
+        else
+            res.send('Error selecting user');
+    });
+    promise.on('success', function(doc) {
+        success(doc);
     });
 });
 
@@ -56,10 +65,7 @@ router.post('/adduser', function(req, res, next) {
     }
     var users = db.get('users');
     var promise = users.find({ username: username }, {});
-    promise.on('error', function(err) {
-        res.send('Error selecting user');
-    });
-    promise.on('success', function(doc) {
+    var success = function(doc) {
         if (doc.length > 0) {
             res.send('User already exists');
             return;
@@ -91,6 +97,18 @@ router.post('/adduser', function(req, res, next) {
                 });
             });
         });
+    };
+    promise.on('error', function(err) {
+        res.send('Error selecting user');
+    });
+    promise.on('success', function(doc) {
+        success(doc);
+    });
+    promise.on('complete', function(err, doc) {
+        if (!err)
+            success(doc);
+        else
+            res.send('Error selecting user');
     });
 
     // create the appropriate indexes

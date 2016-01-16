@@ -20,11 +20,21 @@ router.get('/import', function(req, res, next) {
     res.render('importmfc', { importuser: user });
 });
 
+function registerPromise(promise, successfunc) {
+    promise.on('success', function(doc) {
+        successfunc(doc);
+    });
+    promise.on('complete', function(err, doc) {
+        if (!err)
+            successfunc(doc);
+    });
+}
+
 router.get('/list/tags', function(req, res, next) {
     var tags = Object.create(null);
     var figures = req.db.get('figures');
     var promise = figures.find({uid: req.session.userid}, {});
-    promise.on('success', function(doc) {
+    registerPromise(promise, function(doc) {
         for (var i in doc) {
             var figure = doc[i];
             for (var j in figure.tags) {
@@ -44,7 +54,7 @@ router.get('/list/tag', function(req, res, next) {
 
     var figures = req.db.get('figures');
     var promise = figures.find({uid: req.session.userid, tags: {"$all": tags}},{});
-    promise.on('success', function(doc) {
+    registerPromise(promise, function(doc) {
         res.render('listfigures', { figures: doc, figureSelected: {}, selector: false, tags: tags });
     });
 });
@@ -75,11 +85,11 @@ router.get('/list/figures', function(req, res, next) {
         if (req.query.hasOwnProperty("selected")) {
             selected = JSON.parse(req.query.selected);
         }
-        promise.on('success', function(doc) {
+        registerPromise(promise, function(doc) {
             res.render('listfigurespartial', { figures: doc, figureSelected: selected, selector: selector, tags: [] });
         });
     } else {
-        promise.on('success', function(doc) {
+        registerPromise(promise, function(doc) {
             res.render('listfigures', { figures: doc, figureSelected: {}, selector: false, tags: [] });
         });
     }
@@ -153,7 +163,7 @@ router.get('/mod/figureimage', function(req, res, next) {
     var figures = req.db.get('figures');
     var figureid = figures.id(req.query.id);
     var promise = figures.find({uid: req.session.userid, _id: figureid}, {});
-    promise.on('success', function(doc) {
+    registerPromise(promise, function(doc) {
         var figure = doc[0];
         if (!figure.images.length) {
             res.send('No image');
@@ -243,7 +253,7 @@ router.get('/list/image', function(req, res, next) {
     }
     var imageid = images.id(req.query.id);
     var promise = images.find({_id: imageid}, {});
-    promise.on('success', function(doc) {
+    registerPromise(promise, function(doc) {
         console.log(typeof doc, imageid);
         if (!doc.length) {
             res.send('No data');
@@ -295,7 +305,7 @@ router.post('/add/tag', function(req, res, next) {
                                  {"$push": {
                                      tags: tag
                                  }});
-    promise.on('success', function() {
+    registerPromise(promise, function() {
         res.location("/figures/list/figure?id=" + id);
         res.redirect("/figures/list/figure?id=" + id);
     });
@@ -318,7 +328,7 @@ router.get('/remove/tag', function(req, res, next) {
                                  {"$pull": {
                                      tags: tag
                                  }});
-    promise.on('success', function() {
+    registerPromise(promise, function() {
         res.location("/figures/list/figure?id=" + id);
         res.redirect("/figures/list/figure?id=" + id);
     });
@@ -338,12 +348,12 @@ router.all('/add/image', function(req, res, next) {
         var imgid = images.id();
         console.log('new image', imgid);
         var promise = images.insert({_id: imgid, data: path.buffer});
-        promise.on('success', function() {
+        registerPromise(promise, function() {
             promise = figures.update({_id: id},
                                      {"$push": {
                                          images: imgid
                                      }});
-            promise.on('success', function() {
+            registerPromise(promise, function() {
                 res.location("/figures/list/figure?id=" + id);
                 res.redirect("/figures/list/figure?id=" + id);
             });
@@ -366,12 +376,12 @@ router.all('/add/note', function(req, res, next) {
         var notes = req.db.get('notes');
         var noteid = notes.id();
         var promise = notes.insert({_id: noteid, uid: req.session.userid, note: note, figures: [id]});
-        promise.on('success', function() {
+        registerPromise(promise, function() {
             promise = figures.update({_id: id},
                                       {"$push": {
                                           notes: noteid
                                       }});
-            promise.on('success', function() {
+            registerPromise(promise, function() {
                 res.location("/figures/list/figure?id=" + id);
                 res.redirect("/figures/list/figure?id=" + id);
             });
@@ -386,11 +396,9 @@ router.all('/add/box', function(req, res, next) {
     if (box) {
         var boxes = req.db.get('boxes');
         var promise = boxes.insert({box: box, uid: req.session.userid, figures: []});
-        promise.on('success', function() {
-            promise.on('success', function() {
-                res.location("/figures/list/boxes");
-                res.redirect("/figures/list/boxes");
-            });
+        registerPromise(promise, function() {
+            res.location("/figures/list/boxes");
+            res.redirect("/figures/list/boxes");
         });
     } else {
         res.render('addbox');
@@ -402,7 +410,7 @@ router.all('/add/figure', function(req, res, next) {
     if (name) {
         var figures = req.db.get('figures');
         var promise = figures.insert({name: name, uid: req.session.userid, images: [], notes: [], tags: []});
-        promise.on('success', function() {
+        registerPromise(promise, function() {
             res.location("/figures/list/figures");
             res.redirect("/figures/list/figures");
         });
@@ -420,7 +428,7 @@ router.get('/remove/figure', function(req, res, next) {
     var figureid = figures.id(req.query.id);
     console.log('removing ' + figureid);
     var promise = figures.remove({_id: figureid});
-    promise.on('success', function() {
+    registerPromise(promise, function() {
         res.location("/figures/list/figures");
         res.redirect("/figures/list/figures");
     });
@@ -484,18 +492,18 @@ router.all('/add/notefigure', function(req, res, next) {
             figids.push(figures.id(check[i]));
         }
         promise = notes.update({_id: id},{"$push": {figures: {"$each": figids}}});
-        promise.on('success', function() {
+        registerPromise(promise, function() {
             promise = figures.update({_id: {"$in": figids}},{"$push": {notes: id}});
-            promise.on('success', function() {
+            registerPromise(promise, function() {
                 res.location("/figures/list/notes/");
                 res.redirect("/figures/list/notes/");
             });
         });
     } else {
-      promise = figures.find({uid: req.session.userid}, {});
-      promise.on('success', function(doc) {
-          res.render('figureselector', { figures: doc, selector: true, id: id, path: '/figures/add/notefigure', figureSelected: {}, tags: [] });
-      });
+        promise = figures.find({uid: req.session.userid}, {});
+        registerPromise(promise, function(doc) {
+            res.render('figureselector', { figures: doc, selector: true, id: id, path: '/figures/add/notefigure', figureSelected: {}, tags: [] });
+        });
     }
 });
 
@@ -516,13 +524,13 @@ router.all('/add/linkfigure', function(req, res, next) {
         for (var i in check) {
             promise = links.insert({from: from, to: figures.id(check[i])});
         }
-        promise.on('success', function() {
+        registerPromise(promise, function() {
             res.location("/figures/list/figure?id=" + from);
             res.redirect("/figures/list/figure?id=" + from);
         });
     } else {
         promise = figures.find({uid: req.session.userid}, {});
-        promise.on('success', function(doc) {
+        registerPromise(promise, function(doc) {
             res.render('figureselector', { figures: doc, selector: true, id: from, path: '/figures/add/linkfigure', figureSelected: {}, tags: [] });
         });
     }
@@ -546,16 +554,16 @@ router.all('/add/boxfigure', function(req, res, next) {
             figids.push(figures.id(check[i]));
         }
         promise = boxes.update({_id: id},{"$push": {figures: {"$each": figids}}});
-        promise.on('success', function() {
+        registerPromise(promise, function() {
             promise = figures.update({_id: {"$in": figids}},{"$push": {boxes: id}});
-            promise.on('success', function() {
+            registerPromise(promise, function() {
                 res.location("/figures/list/boxes/");
                 res.redirect("/figures/list/boxes/");
             });
         });
     } else {
         promise = figures.find({uid: req.session.userid}, {});
-        promise.on('success', function(doc) {
+        registerPromise(promise, function(doc) {
             res.render('figureselector', { figures: doc, selector: true, id: id, path: '/figures/add/boxfigure', figureSelected: {}, tags: [] });
         });
     }
@@ -589,7 +597,7 @@ router.get('/remove/box', function(req, res, next) {
     }
     var boxid = boxes.id(req.query.id);
     var promise = boxes.remove({_id: boxid});
-    promise.on('success', function() {
+    registerPromise(promise, function() {
         res.location("/figures/list/boxes/");
         res.redirect("/figures/list/boxes/");
     });
@@ -605,7 +613,7 @@ router.get('/remove/boxfigure', function(req, res, next) {
     var boxid = boxes.id(req.query.id);
     var figureid = figures.id(req.query.figureid);
     var promise = boxes.update({_id: boxid}, {"$pull": {figures: figureid}});
-    promise.on('success', function() {
+    registerPromise(promise, function() {
         res.location("/figures/list/boxes/");
         res.redirect("/figures/list/boxes/");
     });
@@ -622,12 +630,12 @@ router.get('/list/notes', function(req, res, next) {
     } else {
         promise = notes.find({uid: req.session.userid}, {});
     }
-    promise.on('success', function(doc) {
+    registerPromise(promise, function(doc) {
         // get the figures
         var allnotes = doc;
         var figures = req.db.get('figures');
         promise = figures.find({uid: req.session.userid},{});
-        promise.on('success', function(doc) {
+        registerPromise(promise, function(doc) {
             var figmap = {};
             for (var i in doc) {
                 figmap[doc[i]._id.toHexString()] = doc[i];
@@ -645,12 +653,12 @@ router.get('/list/notes', function(req, res, next) {
 router.get('/list/boxes', function(req, res, next) {
     var boxes = req.db.get('boxes');
     var promise = boxes.find({uid: req.session.userid}, {});
-    promise.on('success', function(doc) {
+    registerPromise(promise, function(doc) {
         // get the figures
         var allboxes = doc;
         var figures = req.db.get('figures');
         promise = figures.find({uid: req.session.userid},{});
-        promise.on('success', function(doc) {
+        registerPromise(promise, function(doc) {
             var figmap = {};
             for (var i in doc) {
                 figmap[doc[i]._id.toHexString()] = doc[i];

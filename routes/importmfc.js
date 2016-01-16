@@ -58,8 +58,8 @@ importmfc.parseOwned = function(owned, db, username, userid) {
         // check if this id is in the db
         (function(item, id) {
             var promise = figures.find({mfcid: id}, {});
-            promise.on('success', function(doc) {
-                if (!(doc instanceof Array)) {
+            var success = function(doc) {
+                                if (!(doc instanceof Array)) {
                     console.log("doc not instanceof array: " + JSON.stringify(doc));
                     return;
                 }
@@ -117,6 +117,13 @@ importmfc.parseOwned = function(owned, db, username, userid) {
                         gallery(genid, 1);
                     });
                 })(id, genid);
+            };
+            promise.on('success', function(doc) {
+                success(doc);
+            });
+            promise.on('complete', function(err, doc) {
+                if (!err)
+                    success(doc);
             });
         })(item, id);
     }
