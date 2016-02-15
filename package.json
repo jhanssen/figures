@@ -6,19 +6,19 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
-    "bcrypt": "*",
+    "bcrypt": "~0.8.5",
     "body-parser": "~1.10.1",
     "cookie-parser": "~1.3.3",
     "debug": "~2.1.1",
     "express": "~4.11.0",
-    "express-session": "*",
+    "express-session": "~1.13.0",
     "jade": "~1.9.0",
     "kerberos": "0.0.17",
     "mongodb": "~2.0",
-    "monkii": "*",
+    "monkii": "~1.1.5",
     "morgan": "~1.5.1",
-    "mpromise": "*",
-    "multer": "*",
+    "mpromise": "~0.5.5",
+    "multer": "~1.1.0",
     "serve-favicon": "~2.2.0"
   }
 }
